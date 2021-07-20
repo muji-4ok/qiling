@@ -14,7 +14,7 @@ from qiling.os.windows.handle import *
 from qiling.exception import *
 
 
-dllname = 'kernel32_dll'
+dllname = "kernel32_dll"
 
 # BOOL DuplicateHandle(
 #   HANDLE   hSourceProcessHandle,
@@ -25,12 +25,12 @@ dllname = 'kernel32_dll'
 #   BOOL     bInheritHandle,
 #   DWORD    dwOptions
 # );
-@winsdkapi(cc=STDCALL, dllname=dllname, replace_params_type={'HANDLE': 'POINTER'})
+@winsdkapi(cc=STDCALL, dllname=dllname, replace_params_type={"HANDLE": "POINTER"})
 def hook_DuplicateHandle(ql, address, params):
     # TODO for how we manage handle, i think this doesn't work
     content = params["hSourceHandle"]
     dst = params["lpTargetHandle"]
-    ql.mem.write(dst, content.to_bytes(length=ql.pointersize, byteorder='little'))
+    ql.mem.write(dst, content.to_bytes(length=ql.pointersize, byteorder="little"))
     return 1
 
 
@@ -59,7 +59,7 @@ def hook_CloseHandle(ql, address, params):
 #   DWORD  dwMask,
 #   DWORD  dwFlags
 # );
-@winsdkapi(cc=STDCALL, dllname=dllname, replace_params_type={'HANDLE': 'POINTER'})
+@winsdkapi(cc=STDCALL, dllname=dllname, replace_params_type={"HANDLE": "POINTER"})
 def hook_SetHandleInformation(ql, address, params):
     val = params["hObject"]
     handle = ql.os.handle_manager.get(val)

@@ -18,15 +18,16 @@ from qiling.exception import *
 
 import ctypes
 
+
 class msghdr(ctypes.Structure):
     _fields_ = [
-        ("msg_name"      , ctypes.c_uint64),
-        ("msg_namelen"   , ctypes.c_int32 ),
-        ("msg_iov"       , ctypes.c_uint64),
-        ("msg_iovlen"    , ctypes.c_int32 ),
-        ("msg_control"   , ctypes.c_uint64),
-        ("msg_controllen", ctypes.c_int32 ),
-        ("msg_flags"     , ctypes.c_int32 )
+        ("msg_name", ctypes.c_uint64),
+        ("msg_namelen", ctypes.c_int32),
+        ("msg_iov", ctypes.c_uint64),
+        ("msg_iovlen", ctypes.c_int32),
+        ("msg_control", ctypes.c_uint64),
+        ("msg_controllen", ctypes.c_int32),
+        ("msg_flags", ctypes.c_int32),
     ]
 
     _pack_ = 8
@@ -36,11 +37,12 @@ class msghdr(ctypes.Structure):
         data = ql.mem.read(addr, ctypes.sizeof(msghdr))
         return msghdr.from_buffer(data)
 
+
 class cmsghdr(ctypes.Structure):
     _fields_ = [
-        ("cmsg_len"     , ctypes.c_int32),
-        ("cmsg_level"   , ctypes.c_int32),
-        ("cmsg_type"    , ctypes.c_int32),        
+        ("cmsg_len", ctypes.c_int32),
+        ("cmsg_level", ctypes.c_int32),
+        ("cmsg_type", ctypes.c_int32),
     ]
 
     _pack_ = 8
@@ -50,10 +52,11 @@ class cmsghdr(ctypes.Structure):
         data = ql.mem.read(addr, ctypes.sizeof(cmsghdr))
         return cmsghdr.from_buffer(data)
 
+
 class iovec(ctypes.Structure):
     _fields_ = [
-        ("iov_base"  , ctypes.c_uint64),
-        ("iov_len"   , ctypes.c_uint64),
+        ("iov_base", ctypes.c_uint64),
+        ("iov_len", ctypes.c_uint64),
     ]
 
     _pack_ = 8
@@ -78,12 +81,14 @@ def ql_syscall_socket(ql, socket_domain, socket_type, socket_protocol, *args, **
         if idx == -1:
             regreturn = -1
         else:
-            if ql.verbose >= QL_VERBOSE.DEBUG: # set REUSEADDR options under debug mode
-                ql.os.fd[idx] = ql_socket.open(socket_domain, socket_type, socket_protocol, (socket.SOL_SOCKET, socket.SO_REUSEADDR, 1))
+            if ql.verbose >= QL_VERBOSE.DEBUG:  # set REUSEADDR options under debug mode
+                ql.os.fd[idx] = ql_socket.open(
+                    socket_domain, socket_type, socket_protocol, (socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                )
             else:
                 ql.os.fd[idx] = ql_socket.open(socket_domain, socket_type, socket_protocol)
 
-            regreturn = (idx)
+            regreturn = idx
     except Exception:
         ql.log.exception("")
         regreturn = -1
@@ -99,15 +104,15 @@ def ql_syscall_connect(ql, connect_sockfd, connect_addr, connect_addrlen, *args,
     AF_UNIX = 1
     AF_INET = 2
     sock_addr = ql.mem.read(connect_addr, connect_addrlen)
-    family = ql.unpack16(sock_addr[ : 2])
+    family = ql.unpack16(sock_addr[:2])
     s = ql.os.fd[connect_sockfd]
-    ip = b''
-    sun_path = b''
+    ip = b""
+    sun_path = b""
     port = 0
     try:
         if s.family == family:
             if s.family == AF_UNIX:
-                sun_path = sock_addr[2 : ].split(b"\x00")[0]
+                sun_path = sock_addr[2:].split(b"\x00")[0]
                 sun_path = ql.os.path.transform_to_real_path(sun_path.decode())
                 s.connect(sun_path)
                 regreturn = 0
@@ -133,27 +138,24 @@ def ql_syscall_connect(ql, connect_sockfd, connect_addr, connect_addrlen, *args,
 
 
 def ql_syscall_getsockopt(ql, sockfd, level, optname, optval_addr, optlen_addr, *args, **kw):
-    if not (0 <= sockfd < NR_OPEN) or\
-            ql.os.fd[sockfd] == 0:
+    if not (0 <= sockfd < NR_OPEN) or ql.os.fd[sockfd] == 0:
         return -EBADF
-    
-    
+
     try:
         optlen = min(ql.unpack32s(ql.mem.read(optlen_addr, 4)), 1024)
         if optlen < 0:
             return -EINVAL
-            
+
         optval = ql.os.fd[sockfd].getsockopt(level, optname, optlen)
         ql.mem.write(optval_addr, optval)
     except UcError:
         return -EFAULT
-    
+
     return 0
 
 
 def ql_syscall_setsockopt(ql, sockfd, level, optname, optval_addr, optlen, *args, **kw):
-    if not (0 <= sockfd < NR_OPEN) or\
-            ql.os.fd[sockfd] == 0:
+    if not (0 <= sockfd < NR_OPEN) or ql.os.fd[sockfd] == 0:
         return -EBADF
 
     regreturn = 0
@@ -165,7 +167,7 @@ def ql_syscall_setsockopt(ql, sockfd, level, optname, optval_addr, optlen, *args
             ql.os.fd[sockfd].setsockopt(level, optname, optval, None)
         except UcError:
             regreturn = -EFAULT
-    
+
     return regreturn
 
 
@@ -179,7 +181,7 @@ def ql_syscall_shutdown(ql, shutdown_fd, shutdown_how, *args, **kw):
     return regreturn
 
 
-def ql_syscall_bind(ql, bind_fd, bind_addr, bind_addrlen,  *args, **kw):
+def ql_syscall_bind(ql, bind_fd, bind_addr, bind_addrlen, *args, **kw):
     regreturn = 0
 
     if ql.archtype == QL_ARCH.X8664:
@@ -195,19 +197,19 @@ def ql_syscall_bind(ql, bind_fd, bind_addr, bind_addrlen,  *args, **kw):
         port = port + 8000
 
     if sin_family == 1:
-        path = data[2 : ].split(b'\x00')[0]
+        path = data[2:].split(b"\x00")[0]
         path = ql.os.path.transform_to_real_path(path.decode())
         ql.log.info(path)
         ql.os.fd[bind_fd].bind(path)
 
     # need a proper fix, for now ipv4 comes first
     elif sin_family == 2 and ql.os.bindtolocalhost == True:
-        ql.os.fd[bind_fd].bind(('127.0.0.1', port))
+        ql.os.fd[bind_fd].bind(("127.0.0.1", port))
         host = "127.0.0.1"
 
     # IPv4 should comes first
     elif ql.os.ipv6 == True and sin_family == 10 and ql.os.bindtolocalhost == True:
-        ql.os.fd[bind_fd].bind(('::1', port))
+        ql.os.fd[bind_fd].bind(("::1", port))
         host = "::1"
 
     elif ql.os.bindtolocalhost == False:
@@ -222,7 +224,7 @@ def ql_syscall_bind(ql, bind_fd, bind_addr, bind_addrlen,  *args, **kw):
     if sin_family == 1:
         ql.log.debug("bind(%d, %s, %d) = %d" % (bind_fd, path, bind_addrlen, regreturn))
     else:
-        ql.log.debug("bind(%d,%s:%d,%d) = %d" % (bind_fd, host, port, bind_addrlen,regreturn))
+        ql.log.debug("bind(%d,%s:%d,%d) = %d" % (bind_fd, host, port, bind_addrlen, regreturn))
         ql.log.debug("syscall bind host: %s and port: %i sin_family: %i" % (ql_bin_to_ip(host), port, sin_family))
 
     return regreturn
@@ -243,7 +245,7 @@ def ql_syscall_getsockname(ql, sockfd, addr, addrlenptr, *args, **kw):
         regreturn = -1
 
     ql.log.debug("getsockname(%d, 0x%x, 0x%x) = %d" % (sockfd, addr, addrlenptr, regreturn))
-    return regreturn  
+    return regreturn
 
 
 def ql_syscall_getpeername(ql, sockfd, addr, addrlenptr, *args, **kw):
@@ -261,7 +263,7 @@ def ql_syscall_getpeername(ql, sockfd, addr, addrlenptr, *args, **kw):
         regreturn = -1
 
     ql.log.debug("getpeername(%d, 0x%x, 0x%x) = %d" % (sockfd, addr, addrlenptr, regreturn))
-    return regreturn  
+    return regreturn
 
 
 def ql_syscall_listen(ql, listen_sockfd, listen_backlog, *args, **kw):
@@ -280,13 +282,14 @@ def ql_syscall_listen(ql, listen_sockfd, listen_backlog, *args, **kw):
 
 def ql_syscall_accept(ql, accept_sockfd, accept_addr, accept_addrlen, *args, **kw):
     def inet_addr(ip):
-        ret = b''
-        tmp = ip.split('.')
+        ret = b""
+        tmp = ip.split(".")
         if len(tmp) != 4:
             return ret
-        for i in tmp[ : : -1]:
+        for i in tmp[::-1]:
             ret += bytes([int(i)])
         return ret
+
     try:
         conn, address = ql.os.fd[accept_sockfd].accept()
         if conn == None:
@@ -303,11 +306,11 @@ def ql_syscall_accept(ql, accept_sockfd, accept_addr, accept_addrlen, *args, **k
             ql.os.fd[idx] = conn
             regreturn = idx
 
-        if ql.code == None and accept_addr !=0 and accept_addrlen != 0:
+        if ql.code == None and accept_addr != 0 and accept_addrlen != 0:
             tmp_buf = ql.pack16(conn.family)
             tmp_buf += ql.pack16(address[1])
             tmp_buf += inet_addr(address[0])
-            tmp_buf += b'\x00' * 8
+            tmp_buf += b"\x00" * 8
             ql.mem.write(accept_addr, tmp_buf)
             ql.mem.write(accept_addrlen, ql.pack32(16))
     except:
@@ -336,7 +339,7 @@ def ql_syscall_send(ql, send_sockfd, send_buf, send_len, send_flags, *args, **kw
     if 0 <= send_sockfd < NR_OPEN and ql.os.fd[send_sockfd] != 0:
         try:
             ql.log.debug("debug send() start")
-            tmp_buf = ql.mem.read(send_buf, send_len)  
+            tmp_buf = ql.mem.read(send_buf, send_len)
             ql.log.debug("fd is " + str(send_sockfd))
             ql.log.debug("send() CONTENT:")
             ql.log.debug("%s" % str(tmp_buf))
@@ -353,25 +356,22 @@ def ql_syscall_send(ql, send_sockfd, send_buf, send_len, send_flags, *args, **kw
     return regreturn
 
 
-def ql_syscall_recvmsg(ql, sockfd, msg_addr, flags, *args, **kw):    
+def ql_syscall_recvmsg(ql, sockfd, msg_addr, flags, *args, **kw):
     regreturn = 0
-    if  0 <= sockfd < NR_OPEN and ql.os.fd[sockfd] != 0:
+    if 0 <= sockfd < NR_OPEN and ql.os.fd[sockfd] != 0:
         msg = msghdr.load(ql, msg_addr)
 
         try:
-            data, ancdata, mflags, addr = ql.os.fd[sockfd].recvmsg(msg.msg_namelen, msg.msg_controllen, flags)            
+            data, ancdata, mflags, addr = ql.os.fd[sockfd].recvmsg(msg.msg_namelen, msg.msg_controllen, flags)
 
             # TODO: handle the addr
 
-            iovec_addr  = msg.msg_iov
+            iovec_addr = msg.msg_iov
             has_written = 0
             for i in range(msg.msg_iovlen):
                 vec = iovec.load(ql, iovec_addr)
                 size = min(vec.iov_len, len(data) - has_written)
-                ql.mem.write(
-                    vec.iov_base, 
-                    data[has_written: has_written + size]
-                )
+                ql.mem.write(vec.iov_base, data[has_written : has_written + size])
                 iovec_addr += ctypes.sizeof(iovec)
 
             cmsg_addr = msg.msg_control
@@ -381,13 +381,13 @@ def ql_syscall_recvmsg(ql, sockfd, msg_addr, flags, *args, **kw):
                 cmsg.cmsg_level = cmsg_level
                 cmsg.cmsg_type = cmsg_type
                 cmsg_data_addr = cmsg_addr + ctypes.sizeof(cmsghdr)
-                
+
                 ql.mem.write(cmsg_data_addr, cmsg_data)
                 ql.mem.write(cmsg_addr, bytes(cmsg))
 
                 cmsg_addr += cmsg.cmsg_len
 
-            msg.msg_flags = mflags            
+            msg.msg_flags = mflags
             ql.mem.write(msg_addr, bytes(msg))
 
             regreturn = len(data)
@@ -398,7 +398,10 @@ def ql_syscall_recvmsg(ql, sockfd, msg_addr, flags, *args, **kw):
 
     return regreturn
 
-def ql_syscall_recvfrom(ql, recvfrom_sockfd, recvfrom_buf, recvfrom_len, recvfrom_flags, recvfrom_addr, recvfrom_addrlen, *args, **kw):
+
+def ql_syscall_recvfrom(
+    ql, recvfrom_sockfd, recvfrom_buf, recvfrom_len, recvfrom_flags, recvfrom_addr, recvfrom_addrlen, *args, **kw
+):
     # For x8664, recvfrom() is called finally when calling recv() in TCP communications
     SOCK_STREAM = 1
     if ql.os.fd[recvfrom_sockfd].socktype == SOCK_STREAM:
@@ -431,7 +434,9 @@ def ql_syscall_recvfrom(ql, recvfrom_sockfd, recvfrom_buf, recvfrom_len, recvfro
         return regreturn
 
 
-def ql_syscall_sendto(ql, sendto_sockfd, sendto_buf, sendto_len, sendto_flags, sendto_addr, sendto_addrlen, *args, **kw):
+def ql_syscall_sendto(
+    ql, sendto_sockfd, sendto_buf, sendto_len, sendto_flags, sendto_addr, sendto_addrlen, *args, **kw
+):
     # For x8664, sendto() is called finally when calling send() in TCP communications
     SOCK_STREAM = 1
     if ql.os.fd[sendto_sockfd].socktype == SOCK_STREAM:
@@ -443,17 +448,17 @@ def ql_syscall_sendto(ql, sendto_sockfd, sendto_buf, sendto_len, sendto_flags, s
                 ql.log.debug("debug sendto() start")
                 tmp_buf = ql.mem.read(sendto_buf, sendto_len)
 
-                if ql.archtype== QL_ARCH.X8664:
+                if ql.archtype == QL_ARCH.X8664:
                     data = ql.mem.read(sendto_addr, 8)
                 else:
                     data = ql.mem.read(sendto_addr, sendto_addrlen)
 
-                sin_family, = struct.unpack("<h", data[:2])
+                (sin_family,) = struct.unpack("<h", data[:2])
                 port, host = struct.unpack(">HI", data[2:8])
                 host = ql_bin_to_ip(host)
 
                 if sin_family == 1:
-                    path = data[2 : ].split(b'\x00')[0]
+                    path = data[2:].split(b"\x00")[0]
                     path = ql.os.path.transform_to_real_path(path.decode())
 
                 ql.log.debug("fd is " + str(sendto_sockfd))

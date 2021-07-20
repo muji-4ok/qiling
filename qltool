@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 
+#
 # Cross Platform and Multi Architecture Advanced Binary Emulation Framework
 #
 
@@ -26,56 +26,56 @@ def read_file(fname: str):
 
     return content
 
+
 class __arg_env(argparse.Action):
     def __call__(self, parser, namespace, values, option_string):
         env = {}
 
         if os.path.exists(values):
-            with open(values, 'rb') as f:
+            with open(values, "rb") as f:
                 env = pickle.load(f)
         else:
             env = ast.literal_eval(values)
 
         setattr(namespace, self.dest, env)
 
+
 class __arg_verbose(argparse.Action):
     def __call__(self, parser, namespace, values, option_string):
         setattr(namespace, self.dest, verbose_map[values])
 
+
 def handle_code(options: argparse.Namespace):
-    if options.format == 'hex':
+    if options.format == "hex":
         if options.input is not None:
-            print ("Load HEX from ARGV")
+            print("Load HEX from ARGV")
             code = str(options.input).strip("\\\\x").split("x")
             code = "".join(code).strip()
-            code =  bytes.fromhex(code)
+            code = bytes.fromhex(code)
         elif options.filename is not None:
-            print ("Load HEX from FILE")
-            code = str(read_file(options.filename)).strip('b\'').strip('\\n')
-            code = code.strip('x').split("\\\\x")
+            print("Load HEX from FILE")
+            code = str(read_file(options.filename)).strip("b'").strip("\\n")
+            code = code.strip("x").split("\\\\x")
             code = "".join(code).strip()
             code = bytes.fromhex(code)
         else:
             print("ERROR: File not found")
             exit(1)
 
-    elif options.format == 'asm':
-        print ("Load ASM from FILE")
+    elif options.format == "asm":
+        print("Load ASM from FILE")
         assembly = read_file(options.filename)
         archtype = arch_convert(options.arch)
 
-        archendian = {
-            'little': QL_ENDIAN.EL,
-            'big'   : QL_ENDIAN.EB
-        }[options.endian]
+        archendian = {"little": QL_ENDIAN.EL, "big": QL_ENDIAN.EB}[options.endian]
 
         # TODO: Thumb support.
         assembler = ql_create_assembler(archtype, archendian, 0)
         code, _ = assembler.asm(assembly)
         code = bytes(code)
 
-    elif options.format == 'bin':
-        print ("Load BIN from FILE")
+    elif options.format == "bin":
+        print("Load BIN from FILE")
         if options.filename is not None:
             code = read_file(options.filename)
         else:
@@ -88,13 +88,14 @@ def handle_code(options: argparse.Namespace):
         code=code,
         ostype=options.os,
         archtype=options.arch,
-        bigendian=(options.endian == 'big'),
+        bigendian=(options.endian == "big"),
         verbose=options.verbose,
         profile=options.profile,
-        filter=options.filter
+        filter=options.filter,
     )
 
     return ql
+
 
 def handle_run(options: argparse.Namespace):
     effective_argv = []
@@ -120,7 +121,7 @@ def handle_run(options: argparse.Namespace):
         log_file=options.log_file,
         log_plain=options.log_plain,
         multithread=options.multithread,
-        filter=options.filter
+        filter=options.filter,
     )
 
     # attach Qdb at entry point
@@ -129,6 +130,7 @@ def handle_run(options: argparse.Namespace):
         exit()
 
     return ql
+
 
 def handle_examples(parser: argparse.ArgumentParser):
     prog = os.path.basename(__file__)
@@ -167,82 +169,108 @@ def handle_examples(parser: argparse.ArgumentParser):
 
     parser.exit(0, __ql_examples)
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--version', action='version', version=f'qltool for Qiling {ql_version}, using Unicorn {unicorn.__version__}')
 
-    commands = parser.add_subparsers(title='sub commands', description='select execution mode', dest='subcommand')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--version", action="version", version=f"qltool for Qiling {ql_version}, using Unicorn {unicorn.__version__}"
+    )
+
+    commands = parser.add_subparsers(title="sub commands", description="select execution mode", dest="subcommand")
 
     # set "run" subcommand options
-    run_parser = commands.add_parser('run', help='run a program')
-    run_parser.add_argument('-f', '--filename', default=None, metavar="FILE", help="filename")
-    run_parser.add_argument('--rootfs', required=True, help='emulated rootfs')
-    run_parser.add_argument('--args', default=[], nargs=argparse.REMAINDER, dest="args", help="args")
-    run_parser.add_argument('run_args', default=[], nargs=argparse.REMAINDER)
+    run_parser = commands.add_parser("run", help="run a program")
+    run_parser.add_argument("-f", "--filename", default=None, metavar="FILE", help="filename")
+    run_parser.add_argument("--rootfs", required=True, help="emulated rootfs")
+    run_parser.add_argument("--args", default=[], nargs=argparse.REMAINDER, dest="args", help="args")
+    run_parser.add_argument("run_args", default=[], nargs=argparse.REMAINDER)
 
     # set "code" subcommand options
-    code_parser = commands.add_parser('code', help='execute a shellcode')
-    code_parser.add_argument('-f', '--filename', metavar="FILE", help="filename")
-    code_parser.add_argument('-i', '--input', metavar="INPUT", dest="input", help='input hex value')
-    code_parser.add_argument('--arch', required=True, choices=arch_map)
-    code_parser.add_argument('--endian', choices=('little', 'big'), default='little')
-    code_parser.add_argument('--os', required=True, choices=os_map)
-    code_parser.add_argument('--rootfs', help='emulated root filesystem, that is where all libraries reside')
-    code_parser.add_argument('--format', choices=('asm', 'hex', 'bin'), default='bin', help='input file format')
+    code_parser = commands.add_parser("code", help="execute a shellcode")
+    code_parser.add_argument("-f", "--filename", metavar="FILE", help="filename")
+    code_parser.add_argument("-i", "--input", metavar="INPUT", dest="input", help="input hex value")
+    code_parser.add_argument("--arch", required=True, choices=arch_map)
+    code_parser.add_argument("--endian", choices=("little", "big"), default="little")
+    code_parser.add_argument("--os", required=True, choices=os_map)
+    code_parser.add_argument("--rootfs", help="emulated root filesystem, that is where all libraries reside")
+    code_parser.add_argument("--format", choices=("asm", "hex", "bin"), default="bin", help="input file format")
 
     # set "examples" subcommand
-    expl_parser = commands.add_parser('examples', help='show examples and exit', add_help=False)
+    expl_parser = commands.add_parser("examples", help="show examples and exit", add_help=False)
 
     comm_parser = run_parser
 
-    if len(sys.argv) > 1 and sys.argv[1] == 'code':
+    if len(sys.argv) > 1 and sys.argv[1] == "code":
         comm_parser = code_parser
 
     # set common options
-    comm_parser.add_argument('-v', '--verbose', choices=verbose_map, default=QL_VERBOSE.DEFAULT, action=__arg_verbose, help='set verbosity level')
-    comm_parser.add_argument('--env', metavar="FILE", action=__arg_env, help="pickle file containing an environment dictionary")
-    comm_parser.add_argument('-g', '--gdb', nargs='?', metavar='SERVER:PORT', const='gdb', help='enable gdb server')
-    comm_parser.add_argument('--qdb', action='store_true', help='attach Qdb at entry point, it\'s MIPS, ARM(THUMB) supported only for now')
-    comm_parser.add_argument('--rr', action='store_true', help='switch on record and replay feature in qdb, only works with --qdb')
-    comm_parser.add_argument('--profile', help="define a customized profile")
-    comm_parser.add_argument('--no-console', action='store_false', dest='console', help='do not emit output to console')
-    comm_parser.add_argument('-e', '--filter', metavar='REGEXP', default=None, help="apply a filtering regexp on log output")
-    comm_parser.add_argument('--log-file', help="write log to a file")
-    comm_parser.add_argument('--log-plain', action='store_true', help="do not use colors in log output")
-    comm_parser.add_argument('--root', action='store_true', help='enable sudo required mode')
-    comm_parser.add_argument('--debug-stop', action='store_true', help='stop running on error; requires verbose to be set to either "debug" or "dump"')
-    comm_parser.add_argument('-m', '--multithread',action='store_true', help='run in multithread mode')
-    comm_parser.add_argument('--timeout', type=int, default=0, help='set emulation timeout')
-    comm_parser.add_argument('-c', '--coverage-file', default=None, help='code coverage file name')
-    comm_parser.add_argument('--coverage-format', default='drcov', choices=cov_utils.factory.formats, help='code coverage file format')
-    comm_parser.add_argument('--json', action='store_true', help='print a json report of the emulation')
+    comm_parser.add_argument(
+        "-v",
+        "--verbose",
+        choices=verbose_map,
+        default=QL_VERBOSE.DEFAULT,
+        action=__arg_verbose,
+        help="set verbosity level",
+    )
+    comm_parser.add_argument(
+        "--env", metavar="FILE", action=__arg_env, help="pickle file containing an environment dictionary"
+    )
+    comm_parser.add_argument("-g", "--gdb", nargs="?", metavar="SERVER:PORT", const="gdb", help="enable gdb server")
+    comm_parser.add_argument(
+        "--qdb", action="store_true", help="attach Qdb at entry point, it's MIPS, ARM(THUMB) supported only for now"
+    )
+    comm_parser.add_argument(
+        "--rr", action="store_true", help="switch on record and replay feature in qdb, only works with --qdb"
+    )
+    comm_parser.add_argument("--profile", help="define a customized profile")
+    comm_parser.add_argument(
+        "--no-console", action="store_false", dest="console", help="do not emit output to console"
+    )
+    comm_parser.add_argument(
+        "-e", "--filter", metavar="REGEXP", default=None, help="apply a filtering regexp on log output"
+    )
+    comm_parser.add_argument("--log-file", help="write log to a file")
+    comm_parser.add_argument("--log-plain", action="store_true", help="do not use colors in log output")
+    comm_parser.add_argument("--root", action="store_true", help="enable sudo required mode")
+    comm_parser.add_argument(
+        "--debug-stop",
+        action="store_true",
+        help='stop running on error; requires verbose to be set to either "debug" or "dump"',
+    )
+    comm_parser.add_argument("-m", "--multithread", action="store_true", help="run in multithread mode")
+    comm_parser.add_argument("--timeout", type=int, default=0, help="set emulation timeout")
+    comm_parser.add_argument("-c", "--coverage-file", default=None, help="code coverage file name")
+    comm_parser.add_argument(
+        "--coverage-format", default="drcov", choices=cov_utils.factory.formats, help="code coverage file format"
+    )
+    comm_parser.add_argument("--json", action="store_true", help="print a json report of the emulation")
     options = parser.parse_args()
 
     # subparser argument required=True is not supported in python 3.6
     # manually check whether the user did not specify a subcommand (execution mode)
     if not options.subcommand:
-        parser.error('please select execution mode')
+        parser.error("please select execution mode")
 
-    if options.subcommand == 'examples':
+    if options.subcommand == "examples":
         handle_examples(parser)
 
     if options.debug_stop and options.verbose not in (QL_VERBOSE.DEBUG, QL_VERBOSE.DUMP):
         parser.error('the debug_stop option requires verbose to be set to either "debug" or "dump"')
 
     # ql file setup
-    if options.subcommand == 'run':
+    if options.subcommand == "run":
         ql = handle_run(options)
 
     # ql code setup
-    elif options.subcommand == 'code':
+    elif options.subcommand == "code":
         ql = handle_code(options)
 
     # ql execute additional options
     if options.gdb:
         argval = options.gdb
 
-        if argval != 'gdb':
-            argval = f'gdb:{argval}'
+        if argval != "gdb":
+            argval = f"gdb:{argval}"
 
         ql.debugger = argval
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 
+#
 # Cross Platform and Multi Architecture Advanced Binary Emulation Framework
 #
 import struct
@@ -11,7 +11,8 @@ from qiling.os.windows.handle import *
 from qiling.os.windows.const import *
 from qiling.os.windows.structs import *
 
-dllname = 'advapi32_dll'
+dllname = "advapi32_dll"
+
 
 def _RegOpenKey(ql, address, params):
     hKey = params["hKey"]
@@ -226,7 +227,7 @@ def hook_RegCreateKeyW(ql, address, params):
 #   PHKEY                       phkResult,
 #   LPDWORD                     lpdwDisposition
 # );
-@winsdkapi(cc=STDCALL, dllname=dllname, replace_params_type={'DWORD': 'POINTER'})
+@winsdkapi(cc=STDCALL, dllname=dllname, replace_params_type={"DWORD": "POINTER"})
 def hook_RegCreateKeyExW(ql, address, params):
     ret = ERROR_SUCCESS
 
@@ -280,6 +281,7 @@ def hook_RegSetValueA(ql, address, params):
 
     return ret
 
+
 # LSTATUS RegSetValueExA(
 #   HKEY       hKey,
 #   LPCSTR     lpValueName,
@@ -304,7 +306,6 @@ def hook_RegSetValueExA(ql, address, params):
     ql.os.registry_manager.write(s_hKey, s_lpValueName, dwType, s_lpData)
 
     return ret
-
 
 
 # LSTATUS RegSetValueExW(
@@ -433,12 +434,13 @@ def hook_GetSidSubAuthorityCount(ql, address, params):
 #   PSID  pSid,
 #   DWORD nSubAuthority
 # );
-@winsdkapi(cc=STDCALL, dllname=dllname, replace_params_type={'DWORD': 'INT'})
+@winsdkapi(cc=STDCALL, dllname=dllname, replace_params_type={"DWORD": "INT"})
 def hook_GetSidSubAuthority(ql, address, params):
     num = params["nSubAuthority"]
     sid = ql.os.handle_manager.get(params["pSid"]).obj
     addr_authority = sid.addr + 8 + (ql.pointersize * num)
     return addr_authority
+
 
 # LSTATUS RegEnumValueA(
 #   HKEY    hKey,
@@ -452,7 +454,8 @@ def hook_GetSidSubAuthority(ql, address, params):
 # );
 @winsdkapi(cc=STDCALL, dllname=dllname)
 def hook_RegEnumValueA(ql, address, params):
-    return 259 # ERROR_NO_MORE_ITEMS
+    return 259  # ERROR_NO_MORE_ITEMS
+
 
 # SC_HANDLE OpenSCManagerA(
 #   LPCSTR lpMachineName,
@@ -470,6 +473,7 @@ def hook_OpenSCManagerA(ql, address, params):
         ql.os.handle_manager.append(new_handle)
     return new_handle.id
 
+
 # SC_HANDLE CreateServiceA(
 #   SC_HANDLE hSCManager,
 #   LPCSTR    lpServiceName,
@@ -485,21 +489,25 @@ def hook_OpenSCManagerA(ql, address, params):
 #   LPCSTR    lpServiceStartName,
 #   LPCSTR    lpPassword
 # );
-@winsdkapi(cc=STDCALL, dllname=dllname, replace_params={
-    "hSCManager":HANDLE,
-    "lpServiceName": STRING,
-    "lpDisplayName": STRING,
-    "dwDesiredAccess": DWORD,
-    "dwServiceType": DWORD,
-    "dwStartType": DWORD,
-    "dwErrorControl": DWORD,
-    "lpBinaryPathName": STRING,
-    "lpLoadOrderGroup": STRING,
-    "lpdwTagId": POINTER,
-    "lpDependencies": STRING,
-    "lpServiceStartName": STRING,
-    "lpPassword": STRING
-    })
+@winsdkapi(
+    cc=STDCALL,
+    dllname=dllname,
+    replace_params={
+        "hSCManager": HANDLE,
+        "lpServiceName": STRING,
+        "lpDisplayName": STRING,
+        "dwDesiredAccess": DWORD,
+        "dwServiceType": DWORD,
+        "dwStartType": DWORD,
+        "dwErrorControl": DWORD,
+        "lpBinaryPathName": STRING,
+        "lpLoadOrderGroup": STRING,
+        "lpdwTagId": POINTER,
+        "lpDependencies": STRING,
+        "lpServiceStartName": STRING,
+        "lpPassword": STRING,
+    },
+)
 def hook_CreateServiceA(ql, address, params):
     hSCManager = params["hSCManager"]
     lpServiceName = params["lpServiceName"]
@@ -509,16 +517,17 @@ def hook_CreateServiceA(ql, address, params):
     ql.os.handle_manager.append(new_handle)
     return new_handle.id
 
+
 # SC_HANDLE OpenServiceA(
 #   SC_HANDLE hSCManager,
 #   LPCSTR    lpServiceName,
 #   DWORD     dwDesiredAccess
 # );
-@winsdkapi(cc=STDCALL, dllname=dllname,replace_params={
-    "hSCManager":HANDLE,
-    "lpServiceName": STRING,
-    "dwDesiredAccess": DWORD    
-})
+@winsdkapi(
+    cc=STDCALL,
+    dllname=dllname,
+    replace_params={"hSCManager": HANDLE, "lpServiceName": STRING, "dwDesiredAccess": DWORD},
+)
 def hook_OpenServiceA(ql, address, params):
     hSCManager = params["hSCManager"]
     lpServiceName = params["lpServiceName"]
@@ -529,14 +538,16 @@ def hook_OpenServiceA(ql, address, params):
     else:
         return 0
 
+
 # BOOL CloseServiceHandle(
 #   SC_HANDLE hSCObject
 # );
-@winsdkapi(cc=STDCALL, dllname=dllname, replace_params={"hSCObject":HANDLE})
+@winsdkapi(cc=STDCALL, dllname=dllname, replace_params={"hSCObject": HANDLE})
 def hook_CloseServiceHandle(ql, address, params):
     hSCObject = params["hSCObject"]
     ql.os.handle_manager.delete(hSCObject)
     return 1
+
 
 # BOOL StartServiceA(
 #   SC_HANDLE hService,
@@ -546,6 +557,7 @@ def hook_CloseServiceHandle(ql, address, params):
 @winsdkapi(cc=STDCALL, dllname=dllname)
 def hook_StartServiceA(ql, address, params):
     return 1
+
 
 # BOOL AllocateAndInitializeSid(
 #   PSID_IDENTIFIER_AUTHORITY pIdentifierAuthority,
@@ -578,10 +590,10 @@ def hook_AllocateAndInitializeSid(ql, address, params):
 
 
 # Some default Sids:
-__adminsid = None # Administrators (S-1-5-32-544)
-__userssid = None # All Users (S-1-5-32-545)
-__guestssid = None # All Users (S-1-5-32-546)
-__poweruserssid = None # Power Users (S-1-5-32-547)
+__adminsid = None  # Administrators (S-1-5-32-544)
+__userssid = None  # All Users (S-1-5-32-545)
+__guestssid = None  # All Users (S-1-5-32-546)
+__poweruserssid = None  # Power Users (S-1-5-32-547)
 
 
 def get_adminsid(ql):
@@ -592,6 +604,7 @@ def get_adminsid(ql):
         __adminsid = Sid(ql, revision=1, identifier=5, subs=subs, subs_count=2)
     return __adminsid
 
+
 def get_userssid(ql):
     global __userssid
     if __userssid == None:
@@ -600,6 +613,7 @@ def get_userssid(ql):
         __userssid = Sid(ql, revision=1, identifier=5, subs=subs, subs_count=2)
     return __userssid
 
+
 def get_guestssid(ql):
     global __guestssid
     if __guestssid == None:
@@ -607,6 +621,7 @@ def get_guestssid(ql):
         subs = b"\x20\x00\x00\x00\x22\x02\x00\x00"
         __guestssid = Sid(ql, revision=1, identifier=5, subs=subs, subs_count=2)
     return __guestssid
+
 
 def get_poweruserssid(ql):
     global __poweruserssid
@@ -637,10 +652,10 @@ def hook_CheckTokenMembership(ql, address, params):
         elif get_guestssid(ql) == sid:
             IsMember = 0
         else:
-            assert False, 'unimplemented'
+            assert False, "unimplemented"
     else:
-        assert False, 'unimplemented'
-    ql.mem.write(params['IsMember'], ql.pack(IsMember))
+        assert False, "unimplemented"
+    ql.mem.write(params["IsMember"], ql.pack(IsMember))
     return 1
 
 

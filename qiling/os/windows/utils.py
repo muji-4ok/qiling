@@ -7,20 +7,22 @@ import ntpath
 
 from qiling import Qiling
 
+
 def ql_x86_windows_hook_mem_error(ql: Qiling, access, addr: int, size: int, value: int):
-    ql.log.debug(f'ERROR: unmapped memory access at {addr:#x}')
+    ql.log.debug(f"ERROR: unmapped memory access at {addr:#x}")
     return False
 
 
 def is_file_library(string: str) -> bool:
     string = string.lower()
-    extension = string.rpartition('.')[-1]
+    extension = string.rpartition(".")[-1]
     return extension in ("dll", "exe", "sys", "drv")
 
 
 def path_leaf(path):
     head, tail = ntpath.split(path)
     return tail or ntpath.basename(head)
+
 
 # FIXME: determining a function size by locating 'ret' opcodes in its code is a very unreliable way, to say
 # the least. not only that 'ret' instructions may appear more than once in a single function, they not are

@@ -24,10 +24,21 @@ from qiling.exception import *
 def ql_syscall_munmap(ql, munmap_addr, munmap_len, *args, **kw):
 
     # get all mapped fd with flag MAP_SHARED and we definitely dont want to wipe out share library
-    mapped_fd = [fd for fd in ql.os.fd if fd != 0 and isinstance(fd, ql_file) and fd._is_map_shared and not (fd.name.endswith(".so") or fd.name.endswith(".dylib"))]
+    mapped_fd = [
+        fd
+        for fd in ql.os.fd
+        if fd != 0
+        and isinstance(fd, ql_file)
+        and fd._is_map_shared
+        and not (fd.name.endswith(".so") or fd.name.endswith(".dylib"))
+    ]
 
     if len(mapped_fd):
-        all_mem_info = [_mem_info for _, _, _, _mem_info in ql.mem.map_info if _mem_info not in ("[mapped]", "[stack]", "[hook_mem]")]
+        all_mem_info = [
+            _mem_info
+            for _, _, _, _mem_info in ql.mem.map_info
+            if _mem_info not in ("[mapped]", "[stack]", "[hook_mem]")
+        ]
 
         for _fd in mapped_fd:
             if _fd.name in [each.split()[-1] for each in all_mem_info]:
@@ -47,7 +58,7 @@ def ql_syscall_madvise(ql, madvise_addr, madvise_length, madvise_advice, *args, 
     MADV_DONTNEED = 4
 
     if madvise_advice == MADV_DONTNEED:
-        ql.mem.write(madvise_addr, b'\x00' * madvise_length)
+        ql.mem.write(madvise_addr, b"\x00" * madvise_length)
 
     regreturn = 0
     return regreturn
@@ -81,20 +92,22 @@ def syscall_mmap_impl(ql, addr, mlen, prot, flags, fd, pgoffset, ver):
     else:
         raise QlMemoryMappedError("Error: unknown mmap syscall!")
 
-    ql.log.debug("%s(0x%x, 0x%x, %s (0x%x), %s (0x%x), %x, 0x%x)" % (
-                 api_name, addr, mlen, mmap_prot_mapping(prot), prot, mmap_flag_mapping(flags), flags, fd, pgoffset))
+    ql.log.debug(
+        "%s(0x%x, 0x%x, %s (0x%x), %s (0x%x), %x, 0x%x)"
+        % (api_name, addr, mlen, mmap_prot_mapping(prot), prot, mmap_flag_mapping(flags), flags, fd, pgoffset)
+    )
 
     # FIXME
     # this is ugly patch, we might need to get value from elf parse,
     # is32bit or is64bit value not by arch
     if (ql.archtype == QL_ARCH.ARM64) or (ql.archtype == QL_ARCH.X8664):
         fd = ql.unpack64(ql.pack64(fd))
-    elif (ql.archtype == QL_ARCH.MIPS):
+    elif ql.archtype == QL_ARCH.MIPS:
         MAP_ANONYMOUS = 2048
         if ver == 2:
             pgoffset = pgoffset * 4096
-    elif (ql.archtype== QL_ARCH.ARM) and (ql.ostype== QL_OS.QNX):
-        MAP_ANONYMOUS=0x00080000
+    elif (ql.archtype == QL_ARCH.ARM) and (ql.ostype == QL_OS.QNX):
+        MAP_ANONYMOUS = 0x00080000
         fd = ql.unpack32s(ql.pack32s(fd))
     else:
         fd = ql.unpack32s(ql.pack32(fd))
@@ -136,7 +149,7 @@ def syscall_mmap_impl(ql, addr, mlen, prot, flags, fd, pgoffset, ver):
 
     # FIXME: MIPS32 Big Endian
     try:
-        ql.mem.write(mmap_base, b'\x00' * eff_mmap_size)
+        ql.mem.write(mmap_base, b"\x00" * eff_mmap_size)
     except Exception as e:
         raise QlMemoryMappedError("Error: trying to zero memory")
 
@@ -148,18 +161,18 @@ def syscall_mmap_impl(ql, addr, mlen, prot, flags, fd, pgoffset, ver):
         ql.os.fd[fd]._mapped_offset = pgoffset
         ql.log.debug("mem write : " + hex(len(data)))
         ql.log.debug("mem mmap  : " + mem_info)
-        ql.mem.add_mapinfo(mmap_base,
-                           mmap_base + eff_mmap_size,
-                           mem_p=UC_PROT_ALL,
-                           mem_info=("[%s] " % api_name) + mem_info)
+        ql.mem.add_mapinfo(
+            mmap_base, mmap_base + eff_mmap_size, mem_p=UC_PROT_ALL, mem_info=("[%s] " % api_name) + mem_info
+        )
         try:
             ql.mem.write(mmap_base, data)
         except Exception as e:
             ql.log.debug(e)
             raise QlMemoryMappedError("Error: trying to write memory: ")
 
-    ql.log.debug("%s(0x%x, 0x%x, 0x%x, 0x%x, %x, 0x%x) = 0x%x" %
-                 (api_name, addr, mlen, prot, flags, fd, pgoffset, mmap_base))
+    ql.log.debug(
+        "%s(0x%x, 0x%x, 0x%x, 0x%x, %x, 0x%x) = 0x%x" % (api_name, addr, mlen, prot, flags, fd, pgoffset, mmap_base)
+    )
     return mmap_base
 
 
@@ -169,7 +182,7 @@ def ql_syscall_old_mmap(ql, struct_mmap_args, *args, **kw):
 
     for offset in range(0, 0x18, 4):
         data = ql.mem.read(struct_mmap_args + offset, 4)
-        _struct.append(int.from_bytes(data, 'little'))
+        _struct.append(int.from_bytes(data, "little"))
 
     mmap_addr, mmap_length, mmap_prot, mmap_flags, mmap_fd, mmap_offset = _struct
 

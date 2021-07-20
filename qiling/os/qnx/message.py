@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 
+#
 # Cross Platform and Multi Architecture Advanced Binary Emulation Framework
 #
 from struct import pack, unpack
@@ -19,6 +19,7 @@ def ql_qnx_msg_io_write(ql, coid, smsg, sparts, rmsg, rparts, *args, **kw):
 
     return ql_syscall_write(ql, coid, ql.unpack32(ql.mem.read(smsg + 8, 4)), nbytes)
 
+
 def ql_qnx_msg_io_read(ql, coid, smsg, sparts, rmsg, rparts, *args, **kw):
     (type_, combine_len, nbytes, xtype, zero) = unpack("<HHIII", get_message_body(ql, smsg, sparts))
 
@@ -27,9 +28,11 @@ def ql_qnx_msg_io_read(ql, coid, smsg, sparts, rmsg, rparts, *args, **kw):
 
     return ql_syscall_read(ql, coid, rmsg, rparts)
 
+
 def ql_qnx_msg_mem_map(ql, coid, smsg, sparts, rmsg, rparts, *args, **kw):
-    (type_, zero, reserved1, addr, len_, prot, flags,
-            fd, preload, align, offset) = unpack("<HHIQQIIiIQq", get_message_body(ql, smsg, sparts))
+    (type_, zero, reserved1, addr, len_, prot, flags, fd, preload, align, offset) = unpack(
+        "<HHIQQIIiIQq", get_message_body(ql, smsg, sparts)
+    )
 
     ret = ql_syscall_mmap(ql, addr, len_, prot, flags, fd, offset)
     if c_int32(sparts).value < 0:
@@ -39,8 +42,10 @@ def ql_qnx_msg_mem_map(ql, coid, smsg, sparts, rmsg, rparts, *args, **kw):
 
     return 0
 
+
 def ql_syscall_connect_attach(ql, nd, pid, chid, index, flags, *args, **kw):
     return 42
+
 
 def ql_syscall_connect_detach(ql, coid, *args, **kw):
     return 0

@@ -25,4 +25,3 @@ def ql_syscall_wait4(ql, wait4_pid, wait4_wstatus, wait4_options, wait4_rusage, 
     except ChildProcessError:
         regreturn = -ECHILD
     return regreturn
-

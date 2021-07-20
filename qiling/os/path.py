@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 
+#
 # Cross Platform and Multi Architecture Advanced Binary Emulation Framework
 #
 
@@ -19,17 +19,17 @@ from qiling.utils import verify_ret
 #
 # Basic guide:
 #     We should only handle "normal" paths like "C:\Windows\System32" and "bin/a.exe" for users.
-#     For UNC paths like '\\.\PHYSICALDRIVE0" and "\\Server\Share", they should be implemented 
+#     For UNC paths like '\\.\PHYSICALDRIVE0" and "\\Server\Share", they should be implemented
 #     by users via fs mapping interface.
 class QlPathManager:
     def __init__(self, ql: Qiling, cwd: str):
         self.ql = ql
         self._cwd = cwd
-    
+
     @property
     def cwd(self):
         return self._cwd
-    
+
     @cwd.setter
     def cwd(self, c):
         if c[0] != "/":
@@ -52,10 +52,10 @@ class QlPathManager:
             path = path.relative_to(path.anchor)
 
         for p in path.parts:
-            if p == '.':
+            if p == ".":
                 continue
 
-            if p == '..':
+            if p == "..":
                 normalized_path = normalized_path.parent
                 continue
 
@@ -74,8 +74,9 @@ class QlPathManager:
         # Things are complicated here.
         # See https://docs.microsoft.com/zh-cn/windows/win32/fileio/naming-a-file?redirectedfrom=MSDN
         if PureWindowsPath(path).is_absolute():
-            if (len(path) >= 2 and path[0] == '\\' and path[1] == '\\') or \
-                (len(path) >= 3 and path[0].isalpha() and path[2] == '\\'): # \\.\PhysicalDrive0 or \\Server\Share\Directory or X:\
+            if (len(path) >= 2 and path[0] == "\\" and path[1] == "\\") or (
+                len(path) >= 3 and path[0].isalpha() and path[2] == "\\"
+            ):  # \\.\PhysicalDrive0 or \\Server\Share\Directory or X:\
                 # UNC path should be handled in fs mapping. If not, append it to rootfs directly.
                 pw = PureWindowsPath(path)
                 result = rootfs / QlPathManager.normalize(pw)
@@ -83,7 +84,7 @@ class QlPathManager:
                 # code should never reach here.
                 result = rootfs / QlPathManager.normalize(path)
         else:
-            if len(path) >= 3 and path[:3] == r'\\?' or path[:3] == r'\??': # \??\ or \\?\ or \Device\..
+            if len(path) >= 3 and path[:3] == r"\\?" or path[:3] == r"\??":  # \??\ or \\?\ or \Device\..
                 # Similair to \\.\, it should be handled in fs mapping.
                 pw = PureWindowsPath(path)
                 result = rootfs / QlPathManager.normalize(cwd / pw.relative_to(pw.anchor).as_posix())
@@ -115,8 +116,9 @@ class QlPathManager:
             return rootfs / QlPathManager.normalize(cwd / path.as_posix())
 
     def convert_path(self, rootfs, cwd, path):
-        if  (self.ql.ostype == self.ql.platform ) \
-            or (self.ql.ostype in [QL_OS.LINUX, QL_OS.MACOS] and self.ql.platform in [QL_OS.LINUX, QL_OS.MACOS]):
+        if (self.ql.ostype == self.ql.platform) or (
+            self.ql.ostype in [QL_OS.LINUX, QL_OS.MACOS] and self.ql.platform in [QL_OS.LINUX, QL_OS.MACOS]
+        ):
             return QlPathManager.convert_for_native_os(rootfs, cwd, path)
         elif self.ql.ostype in [QL_OS.LINUX, QL_OS.MACOS] and self.ql.platform == QL_OS.WINDOWS:
             return QlPathManager.convert_posix_to_win32(rootfs, cwd, path)
@@ -125,10 +127,10 @@ class QlPathManager:
         else:
             # Fallback
             return QlPathManager.convert_for_native_os(rootfs, cwd, path)
-    
+
     def transform_to_link_path(self, path):
         rootfs = self.ql.rootfs
-        real_path  = self.convert_path(rootfs, self.cwd, path)
+        real_path = self.convert_path(rootfs, self.cwd, path)
 
         return str(real_path.absolute())
 
@@ -137,7 +139,7 @@ class QlPathManager:
 
         rootfs = self.ql.rootfs
         real_path = self.convert_path(rootfs, self.cwd, path)
-        
+
         if os.path.islink(real_path):
             link_path = Path(os.readlink(real_path))
             if not link_path.is_absolute():
@@ -149,14 +151,14 @@ class QlPathManager:
                 if link_path.is_absolute():
                     path_dirs = path_dirs[1:]
 
-                for i in range(0, len(path_dirs)-1):
-                    path_prefix = os.path.sep.join(path_dirs[:i+1])
+                for i in range(0, len(path_dirs) - 1):
+                    path_prefix = os.path.sep.join(path_dirs[: i + 1])
                     real_path_prefix = self.transform_to_real_path(path_prefix)
-                    path_remain = os.path.sep.join(path_dirs[i+1:])
+                    path_remain = os.path.sep.join(path_dirs[i + 1 :])
                     real_path = Path(os.path.join(real_path_prefix, path_remain))
                     if os.path.exists(real_path):
                         break
-            
+
         return str(real_path.absolute())
 
     # The `relative path` here refers to the path which is relative to the rootfs.

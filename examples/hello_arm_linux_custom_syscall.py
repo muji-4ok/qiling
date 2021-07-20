@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-# 
+#
 # Cross Platform and Multi Architecture Advanced Binary Emulation Framework
 #
 
 import sys
+
 sys.path.append("..")
 
 from qiling import Qiling
 from qiling.const import QL_VERBOSE
+
 
 def my_syscall_write(ql: Qiling, write_fd, write_buf, write_count, *args, **kw):
     regreturn = 0
@@ -33,6 +35,6 @@ if __name__ == "__main__":
     ql.set_syscall(0x04, my_syscall_write)
 
     # set syscall by syscall name
-    #ql.set_syscall("write", my_syscall_write)
+    # ql.set_syscall("write", my_syscall_write)
 
     ql.run()

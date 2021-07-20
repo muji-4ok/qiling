@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 
+#
 # Cross Platform and Multi Architecture Advanced Binary Emulation Framework
 #
 
@@ -11,14 +11,13 @@ from qiling.const import *
 
 # define in kernel osfmk/mach/message.h
 # mach_msg_header_t:
-#   mach_msg_bits_t	msgh_bits;                  unsigned int 
+#   mach_msg_bits_t	msgh_bits;                  unsigned int
 #   mach_msg_size_t	msgh_size;                  4 bytes
 #   mach_port_t		msgh_remote_port;           4 bytes
 #   mach_port_t		msgh_local_port;            4 bytes
 #   mach_port_name_t	msgh_voucher_port;      4 bytes
 #   mach_msg_id_t		msgh_id;                4 bytes
-class MachMsgHeader():
-
+class MachMsgHeader:
     def __init__(self, ql):
         self.header_size = 24
         self.ql = ql
@@ -28,12 +27,12 @@ class MachMsgHeader():
         self.msgh_local_port = None
         self.msgh_voucher_port = None
         self.msgh_id = None
-    
+
     def read_header_from_mem(self, addr):
         self.msgh_bits = unpack("<L", self.ql.mem.read(addr, 0x4))[0]
         self.msgh_size = unpack("<L", self.ql.mem.read(addr + 0x4, 0x4))[0]
         self.msgh_remote_port = unpack("<L", self.ql.mem.read(addr + 0x8, 0x4))[0]
-        self.msgh_local_port = unpack("<L", self.ql.mem.read(addr + 0xc, 0x4))[0]
+        self.msgh_local_port = unpack("<L", self.ql.mem.read(addr + 0xC, 0x4))[0]
         self.msgh_voucher_port = unpack("<L", self.ql.mem.read(addr + 0x10, 0x4))[0]
         self.msgh_id = unpack("<L", self.ql.mem.read(addr + 0x14, 0x4))[0]
         # print("size !!!!! {}".format(self.msgh_size))
@@ -49,16 +48,16 @@ class MachMsgHeader():
     #     )
 
 
-# Mach message Class 
+# Mach message Class
 # mach msg: header + content + trailer
-class MachMsg():
+class MachMsg:
     def __init__(self, ql):
         self.ql = ql
         self.header = MachMsgHeader(self.ql)
-        self.content = b''
-        self.trailer = b''
+        self.content = b""
+        self.trailer = b""
         pass
-    
+
     def read_msg_from_mem(self, addr, size):
         self.header = self.read_msg_header(addr, size)
         # between header and content is 4 byte \x00
@@ -68,7 +67,7 @@ class MachMsg():
         self.ql.mem.write(addr, pack("<L", self.header.msgh_bits))
         self.ql.mem.write(addr + 0x4, pack("<L", self.header.msgh_size))
         self.ql.mem.write(addr + 0x8, pack("<L", self.header.msgh_remote_port))
-        self.ql.mem.write(addr + 0xc, pack("<L", self.header.msgh_local_port))
+        self.ql.mem.write(addr + 0xC, pack("<L", self.header.msgh_local_port))
         self.ql.mem.write(addr + 0x10, pack("<L", self.header.msgh_voucher_port))
         self.ql.mem.write(addr + 0x14, pack("<L", self.header.msgh_id))
         if self.content:
@@ -87,21 +86,20 @@ class MachMsg():
         return self.ql.mem.read(addr, size)
 
 
-# Mach Port Class 
+# Mach Port Class
 # not Finished
-class MachPort():
-
+class MachPort:
     def __init__(self, port_name):
         self.name = port_name
         pass
 
 
-# Mach Port Manager : 
+# Mach Port Manager :
 #   1. handle mach msg
 #   2. register some Host Port
 
-class MachPortManager():
 
+class MachPortManager:
     def __init__(self, ql, my_port):
         self.ql = ql
         self.host_port = MachPort(0x303)
@@ -134,13 +132,14 @@ class MachPortManager():
     def get_thread_port(self, MachoThread):
         return MachoThread.port.name
 
+
 # XNU define struct :
 # struct mach_msg_overwrite_trap_args {
 # 	PAD_ARG_(user_addr_t, msg);                     addr length
 # 	PAD_ARG_(mach_msg_option_t, option);            int
 # 	PAD_ARG_(mach_msg_size_t, send_size);           unsigned int
 # 	PAD_ARG_(mach_msg_size_t, rcv_size);            unsigned int
-# 	PAD_ARG_(mach_port_name_t, rcv_name);           unsigned int 
+# 	PAD_ARG_(mach_port_name_t, rcv_name);           unsigned int
 # 	PAD_ARG_(mach_msg_timeout_t, timeout);          unsigned int
 # 	PAD_ARG_(mach_msg_priority_t, override);        unsigned int
 # 	PAD_ARG_8

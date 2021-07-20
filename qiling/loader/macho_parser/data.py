@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-# 
+#
 # Cross Platform and Multi Architecture Advanced Binary Emulation Framework
 #
 
 from struct import unpack
 
-class Segment:
 
+class Segment:
     def __init__(self, lc, data):
         self.name = lc.segment_name
         self.section_num = lc.number_of_sections
@@ -28,11 +28,10 @@ class Segment:
 
 
 class Section:
-    
     def __init__(self, lc, data):
         self.name = lc.section_name
         self.segment_name = lc.segment_name
-        self.address = lc.address 
+        self.address = lc.address
         self.size = lc.size
         self.offset = lc.offset
         self.align = lc.alignment
@@ -46,7 +45,6 @@ class Section:
 
 
 class FunctionStarts:
-
     def __init__(self, lc, data):
         self.offset = lc.data_offset
         self.size = lc.data_size
@@ -71,18 +69,20 @@ class Symbol64(object):
         n_sect = {}
         n_desc = {}
         n_value = {}
-        """.format(self.n_strx, hex(self.n_type), self.n_sect, hex(self.n_desc), hex(self.n_value))
+        """.format(
+            self.n_strx, hex(self.n_type), self.n_sect, hex(self.n_desc), hex(self.n_value)
+        )
 
- 
+
 class SymbolTable:
     def __init__(self, lc, data):
         self.offset = lc.symbol_table_offset
-        self.sym_num = lc.number_of_symbols 
+        self.sym_num = lc.number_of_symbols
         self.content = data[self.offset : self.offset + self.sym_num * 0x10]
 
         self.symbols = []
         for i in range(self.sym_num):
-            tmp = Symbol64(self.content[16*i:16*(i + 1)])
+            tmp = Symbol64(self.content[16 * i : 16 * (i + 1)])
             self.symbols.append(tmp)
 
     def update(self, base):
@@ -91,8 +91,8 @@ class SymbolTable:
 
     def details(self, index, size, strtab):
         result = {}
-        for local_idx, sym in enumerate(self.symbols[index: index + size]):
-            if sym.n_strx != 1: # Why I have an index 1 from string table?
+        for local_idx, sym in enumerate(self.symbols[index : index + size]):
+            if sym.n_strx != 1:  # Why I have an index 1 from string table?
                 symname = strtab[sym.n_strx]
                 tmp = {}
                 tmp["n_strx"] = sym.n_strx
@@ -102,26 +102,28 @@ class SymbolTable:
                 tmp["n_value"] = sym.n_value
                 tmp["index"] = local_idx + index
                 if symname in result:
-#                     print("Symbol name:", symname)
-#                     from pprint import pprint
-#                     pprint(tmp)
-#                     pprint(result[symname])
+                    #                     print("Symbol name:", symname)
+                    #                     from pprint import pprint
+                    #                     pprint(tmp)
+                    #                     pprint(result[symname])
                     if sym.n_value == 0:
                         continue
                 result[symname] = tmp
         return result
- 
+
     # def __str__(self):
     #     return (" SymbolTable: content {}".format(self.content))
 
 
 import bisect
+
+
 class StringTable:
     def __init__(self, lc, data):
         self.offset = lc.string_table_offset
         self.size = lc.string_table_size
         self.content = data[self.offset : self.offset + self.size]
-        tmp_table = self.content.split(b'\0')
+        tmp_table = self.content.split(b"\0")
         self.table = []
         str_offset = 0
         for s in tmp_table:
@@ -140,42 +142,39 @@ class StringTable:
 
 
 class DataInCode:
-
     def __init__(self, lc, data):
         self.offset = lc.data_offset
         self.size = lc.data_size
         self.content = data[self.offset : self.offset + self.size]
 
-    # def __str__(self): 
+    # def __str__(self):
     #     return (" DataInCode: content {}".format(self.content))
 
 
 class CodeSignature:
-
     def __init__(self, lc, data):
         self.offset = lc.data_offset
         self.size = lc.data_size
         self.content = data[self.offset : self.offset + self.size]
 
-    # def __str__(self): 
+    # def __str__(self):
     #     return (" CodeSignature: content {}".format(self.content))
 
 
 class SegmentSplitInfo:
-
     def __init__(self, lc, data):
         self.offset = lc.data_offset
         self.size = lc.data_size
         self.content = data[self.offset : self.offset + self.size]
 
-    # def __str__(self): 
+    # def __str__(self):
     #     return (" SegSplitInfo: content {}".format(self.content))
 
 
 class Relocation64(object):
     def __init__(self, data):
         self.address, tmp = unpack("<II", data)
-        self.symbolnum = tmp & 0xffffff
+        self.symbolnum = tmp & 0xFFFFFF
         tmp >>= 24
         self.pcrel = tmp & 0x1
         tmp >>= 1
@@ -183,8 +182,8 @@ class Relocation64(object):
         tmp >>= 2
         self.extern = tmp & 0x1
         tmp >>= 1
-        self.rtype = tmp & 0xf
-    
+        self.rtype = tmp & 0xF
+
     def __str__(self):
         return """Relocation header:
         address = {}
@@ -193,7 +192,9 @@ class Relocation64(object):
         length = {}
         extern = {}
         rtype = {}
-        """.format(hex(self.address), self.symbolnum, self.pcrel, self.length, self.extern, self.rtype)
+        """.format(
+            hex(self.address), self.symbolnum, self.pcrel, self.length, self.extern, self.rtype
+        )
 
 
 class DySymbolTable:
@@ -218,19 +219,25 @@ class DySymbolTable:
         if self.indsym_num:
             slide = 0
             for i in range(self.indsym_num):
-                self.indirect_symbols.append(unpack("<L", data[self.indsym_offset + slide : self.indsym_offset + slide + 4]))
+                self.indirect_symbols.append(
+                    unpack("<L", data[self.indsym_offset + slide : self.indsym_offset + slide + 4])
+                )
                 slide += 4
 
         if self.extreloc_num:
             slide = 0
             for i in range(self.extreloc_num):
-                self.extreloc.append(Relocation64(data[self.extreloc_offset + slide : self.extreloc_offset + slide + 8]))
+                self.extreloc.append(
+                    Relocation64(data[self.extreloc_offset + slide : self.extreloc_offset + slide + 8])
+                )
                 slide += 8
 
         if self.locreloc_num:
             slide = 0
             for i in range(self.locreloc_num):
-                self.locreloc.append(Relocation64(data[self.locreloc_offset + slide : self.locreloc_offset + slide + 8]))
+                self.locreloc.append(
+                    Relocation64(data[self.locreloc_offset + slide : self.locreloc_offset + slide + 8])
+                )
                 slide += 8
 
     def __str__(self):

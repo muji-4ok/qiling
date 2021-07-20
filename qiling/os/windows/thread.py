@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 
+#
 # Cross Platform and Multi Architecture Advanced Binary Emulation Framework
 #
 
@@ -32,17 +32,17 @@ class QlWindowsThreadManagement(QlThread):
         self.ins_count = 0
         self.THREAD_RET_ADDR = self.ql.os.heap.alloc(8)
         # write nop to THREAD_RET_ADDR
-        self.ql.mem.write(self.THREAD_RET_ADDR, b"\x90"*8)
+        self.ql.mem.write(self.THREAD_RET_ADDR, b"\x90" * 8)
         self.ql.hook_code(thread_scheduler)
 
     def append(self, thread):
         self.threads.append(thread)
 
     def need_schedule(self):
-        return self.cur_thread.is_stop() or self.ins_count %  QlWindowsThreadManagement.TIME_SLICE == 0
+        return self.cur_thread.is_stop() or self.ins_count % QlWindowsThreadManagement.TIME_SLICE == 0
 
     def do_schedule(self):
-        if self.cur_thread.is_stop() or self.ins_count %  QlWindowsThreadManagement.TIME_SLICE == 0:
+        if self.cur_thread.is_stop() or self.ins_count % QlWindowsThreadManagement.TIME_SLICE == 0:
             if len(self.threads) <= 1:
                 return
             else:
@@ -70,7 +70,7 @@ class QlWindowsThread(QlThread):
     def __init__(self, ql, status=1, isFake=False):
         super(QlWindowsThread, self).__init__(ql)
         self.ql = ql
-        self.id =  QlWindowsThread.ID
+        self.id = QlWindowsThread.ID
         QlWindowsThread.ID += 1
         self.status = status
         self.waitforthreads = []
@@ -83,7 +83,7 @@ class QlWindowsThread(QlThread):
         # create new stack
         stack_size = 1024
         new_stack = self.ql.os.heap.alloc(stack_size) + stack_size
-        
+
         if self.ql.archtype == QL_ARCH.X86:
             self.ql.mem.write(new_stack - 4, self.ql.pack32(self.ql.os.thread_manager.THREAD_RET_ADDR))
             self.ql.mem.write(new_stack, self.ql.pack32(func_params))
@@ -104,7 +104,7 @@ class QlWindowsThread(QlThread):
             self.saved_context["rsp"] = new_stack - 8
 
         self.status = status
-        return self.id        
+        return self.id
 
         self.status = status
         return self.id

@@ -15,7 +15,7 @@ from qiling.exception import *
 from qiling.const import *
 
 
-dllname = 'kernel32_dll'
+dllname = "kernel32_dll"
 
 # HANDLE CreateToolhelp32Snapshot(
 #   DWORD dwFlags,

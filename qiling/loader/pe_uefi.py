@@ -20,6 +20,7 @@ from qiling.os.uefi.protocols import EfiSmmBase2Protocol
 from qiling.os.uefi.protocols import EfiSmmCpuProtocol
 from qiling.os.uefi.protocols import EfiSmmSwDispatch2Protocol
 
+
 class QlLoaderPE_UEFI(QlLoader):
     def __init__(self, ql: Qiling):
         super().__init__(ql)
@@ -32,16 +33,16 @@ class QlLoaderPE_UEFI(QlLoader):
 
     # list of members names to save and restore
     __save_members = (
-        'modules',
-        'events',
-        'notify_list',
-        'next_image_base',
-        'loaded_image_protocol_modules',
-        'tpl',
-        'efi_conf_table_array',
-        'efi_conf_table_array_ptr',
-        'efi_conf_table_data_ptr',
-        'efi_conf_table_data_next_ptr'
+        "modules",
+        "events",
+        "notify_list",
+        "next_image_base",
+        "loaded_image_protocol_modules",
+        "tpl",
+        "efi_conf_table_array",
+        "efi_conf_table_array_ptr",
+        "efi_conf_table_data_ptr",
+        "efi_conf_table_data_next_ptr",
     )
 
     def save(self) -> dict:
@@ -51,7 +52,7 @@ class QlLoaderPE_UEFI(QlLoader):
             saved_state[member] = getattr(self, member)
 
         # since this class initialize the heap (that is hosted by the OS object), we will store it here
-        saved_state['heap'] = self.ql.os.heap.save()
+        saved_state["heap"] = self.ql.os.heap.save()
 
         return saved_state
 
@@ -61,21 +62,17 @@ class QlLoaderPE_UEFI(QlLoader):
         for member in QlLoaderPE_UEFI.__save_members:
             setattr(self, member, saved_state[member])
 
-        self.ql.os.heap.restore(saved_state['heap'])
+        self.ql.os.heap.restore(saved_state["heap"])
 
     def install_loaded_image_protocol(self, image_base, image_size):
-        fields = {
-            'gST'        : self.gST,
-            'image_base' : image_base,
-            'image_size' : image_size
-        }
+        fields = {"gST": self.gST, "image_base": image_base, "image_size": image_size}
 
         descriptor = EfiLoadedImageProtocol.make_descriptor(fields)
         self.dxe_context.install_protocol(descriptor, image_base)
 
         self.loaded_image_protocol_modules.append(image_base)
 
-    def map_and_load(self, path: str, exec_now: bool=False):
+    def map_and_load(self, path: str, exec_now: bool = False):
         """Map and load a module into memory.
 
         The specified module would be mapped and loaded into the address set
@@ -99,7 +96,7 @@ class QlLoaderPE_UEFI(QlLoader):
         image_base = pe.OPTIONAL_HEADER.ImageBase or self.next_image_base
         image_size = ql.mem.align(pe.OPTIONAL_HEADER.SizeOfImage, 0x1000)
 
-        assert (image_base % 0x1000) == 0, 'image base is expected to be page-aligned'
+        assert (image_base % 0x1000) == 0, "image base is expected to be page-aligned"
 
         if image_base != pe.OPTIONAL_HEADER.ImageBase:
             pe.relocate_image(image_base)
@@ -109,10 +106,10 @@ class QlLoaderPE_UEFI(QlLoader):
 
         ql.mem.map(image_base, image_size, info="[module]")
         ql.mem.write(image_base, data)
-        ql.log.info(f'Module {path} loaded to {image_base:#x}')
+        ql.log.info(f"Module {path} loaded to {image_base:#x}")
 
         entry_point = image_base + pe.OPTIONAL_HEADER.AddressOfEntryPoint
-        ql.log.info(f'Module entry point at {entry_point:#x}')
+        ql.log.info(f"Module entry point at {entry_point:#x}")
 
         # the 'entry_point' member is used by the debugger. if not set, set it
         # to the first loaded module entry point so the debugger can break
@@ -147,8 +144,8 @@ class QlLoaderPE_UEFI(QlLoader):
         """
 
         # arguments gpr (ms x64 cc)
-        regs = ('rcx', 'rdx', 'r8', 'r9')
-        assert len(args) <= len(regs), f'currently supporting up to {len(regs)} arguments'
+        regs = ("rcx", "rdx", "r8", "r9")
+        assert len(args) <= len(regs), f"currently supporting up to {len(regs)} arguments"
 
         # set up the arguments
         for reg, arg in zip(regs, args):
@@ -168,7 +165,7 @@ class QlLoaderPE_UEFI(QlLoader):
             unload_ptr = self.ql.unpack64(loaded_image_protocol.Unload)
 
             if unload_ptr != 0:
-                self.ql.log.info(f'Unloading module {handle:#x}, calling {unload_ptr:#x}')
+                self.ql.log.info(f"Unloading module {handle:#x}, calling {unload_ptr:#x}")
 
                 self.call_function(unload_ptr, [handle], self.end_of_execution_ptr)
                 self.loaded_image_protocol_modules.remove(handle)
@@ -193,7 +190,7 @@ class QlLoaderPE_UEFI(QlLoader):
         self.call_function(entry_point, [ImageHandle, SystemTable], eoe_trap)
         self.ql.os.entry_point = entry_point
 
-        self.ql.log.info(f'Running from {entry_point:#010x} of {path}')
+        self.ql.log.info(f"Running from {entry_point:#010x} of {path}")
 
     def execute_next_module(self):
         if not self.modules or self.ql.os.notify_before_module_execution(self.ql, self.modules[0][0]):
@@ -213,12 +210,9 @@ class QlLoaderPE_UEFI(QlLoader):
 
         self.loaded_image_protocol_guid = self.ql.os.profile["LOADED_IMAGE_PROTOCOL"]["Guid"]
         self.loaded_image_protocol_modules = []
-        self.tpl = 4 # TPL_APPLICATION
+        self.tpl = 4  # TPL_APPLICATION
 
-        arch_key = {
-            QL_ARCH.X86   : "OS32",
-            QL_ARCH.X8664 : "OS64"
-        }[self.ql.archtype]
+        arch_key = {QL_ARCH.X86: "OS32", QL_ARCH.X8664: "OS64"}[self.ql.archtype]
 
         # -------- init BS / RT / DXE data structures and protocols --------
 
@@ -257,7 +251,7 @@ class QlLoaderPE_UEFI(QlLoader):
 
         # -------- init SMM data structures and protocols --------
 
-        smm_profile = self.ql.os.profile['SMRAM']
+        smm_profile = self.ql.os.profile["SMRAM"]
         self.smm_context = context.SmmContext(self.ql)
 
         # initialize and locate SMM heap
@@ -273,10 +267,7 @@ class QlLoaderPE_UEFI(QlLoader):
 
         self.in_smm = False
 
-        protocols = (
-            EfiSmmCpuProtocol,
-            EfiSmmSwDispatch2Protocol
-        )
+        protocols = (EfiSmmCpuProtocol, EfiSmmSwDispatch2Protocol)
 
         for proto in protocols:
             self.smm_context.install_protocol(proto.descriptor, 1)
@@ -306,4 +297,4 @@ class QlLoaderPE_UEFI(QlLoader):
         self.execute_next_module()
 
     def restore_runtime_services(self):
-        pass # not sure why do we need to restore RT
+        pass  # not sure why do we need to restore RT

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# 
+#
 # Cross Platform and Multi Architecture Advanced Binary Emulation Framework
 #
 
-import os, pickle, sys,unittest
+import os, pickle, sys, unittest
 
 sys.path.append("..")
 from qiling import Qiling
@@ -11,6 +11,7 @@ from qiling.extensions.sanitizers.heap import QlSanitizedMemoryHeap
 from qiling.const import QL_INTERCEPT, QL_VERBOSE
 from qiling.os.uefi.utils import execute_protocol_notifications
 from qiling.os.uefi.const import EFI_SUCCESS, EFI_INVALID_PARAMETER
+
 
 class Test_UEFI(unittest.TestCase):
     def test_x8664_uefi_santizier(self):
@@ -29,7 +30,7 @@ class Test_UEFI(unittest.TestCase):
 
         def sanitized_emulate(path, rootfs, fault_type, verbose=QL_VERBOSE.DEBUG, enable_trace=False):
             ql = Qiling([path], rootfs, verbose=verbose)
-            ql.env['FaultType'] = fault_type
+            ql.env["FaultType"] = fault_type
             enable_sanitized_heap(ql)
             ql.run()
 
@@ -58,14 +59,14 @@ class Test_UEFI(unittest.TestCase):
             print(" Enter into set_api mode")
             print("=" * 40)
             print("\n")
-            event_id = params['Event']
+            event_id = params["Event"]
             self.set_api = event_id
             if event_id in ql.loader.events:
-                ql.loader.events[event_id]['Guid'] = params["Protocol"]
+                ql.loader.events[event_id]["Guid"] = params["Protocol"]
                 # let's force notify
                 event = ql.loader.events[event_id]
                 event["Set"] = True
-                ql.loader.notify_list.append((event_id, event['NotifyFunction'], event['CallbackArgs']))
+                ql.loader.notify_list.append((event_id, event["NotifyFunction"], event["CallbackArgs"]))
                 execute_protocol_notifications(ql, True)
                 ######
                 return EFI_SUCCESS
@@ -91,8 +92,7 @@ class Test_UEFI(unittest.TestCase):
             self.set_api_onexit = params["Registration"]
 
         def find_next_available(heap):
-            """Find next available address on heap.
-            """
+            """Find next available address on heap."""
 
             chunks = sorted(ql.os.heap.chunks, key=lambda c: c.address)
 
@@ -107,9 +107,14 @@ class Test_UEFI(unittest.TestCase):
             return na
 
         if __name__ == "__main__":
-            with open("../examples/rootfs/x8664_efi/rom2_nvar.pickel", 'rb') as f:
+            with open("../examples/rootfs/x8664_efi/rom2_nvar.pickel", "rb") as f:
                 env = pickle.load(f)
-            ql = Qiling(["../examples/rootfs/x8664_efi/bin/TcgPlatformSetupPolicy"], "../examples/rootfs/x8664_efi", env=env, verbose=QL_VERBOSE.DEBUG)
+            ql = Qiling(
+                ["../examples/rootfs/x8664_efi/bin/TcgPlatformSetupPolicy"],
+                "../examples/rootfs/x8664_efi",
+                env=env,
+                verbose=QL_VERBOSE.DEBUG,
+            )
             ql.set_api("RegisterProtocolNotify", force_notify_RegisterProtocolNotify)
             ql.set_api("CopyMem", my_onenter, QL_INTERCEPT.ENTER)
             ql.set_api("LocateProtocol", my_onexit, QL_INTERCEPT.EXIT)
@@ -122,11 +127,12 @@ class Test_UEFI(unittest.TestCase):
             self.assertEqual(0, self.set_api)
             self.assertEqual(ptr + 1, self.set_api_onenter)
             self.assertEqual(0, self.set_api_onexit)
-            
+
             del ql
             del self.set_api
             del self.set_api_onenter
             del self.set_api_onexit
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-# 
+#
 # Cross Platform and Multi Architecture Advanced Binary Emulation Framework
 #
 
 import sys
+
 sys.path.append("..")
 
 from qiling import Qiling
@@ -16,7 +17,7 @@ if __name__ == "__main__":
     X64BASE = int(ql.profile.get("OS64", "load_address"), 16)
 
     # set execution starting and ending points
-    begin_point = X64BASE + 0x109e
-    end_point = X64BASE + 0x10bc
+    begin_point = X64BASE + 0x109E
+    end_point = X64BASE + 0x10BC
 
     ql.run(begin=begin_point, end=end_point)

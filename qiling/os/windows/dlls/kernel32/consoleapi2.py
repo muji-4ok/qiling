@@ -14,7 +14,7 @@ from qiling.os.windows.handle import *
 from qiling.exception import *
 
 
-dllname = 'kernel32_dll'
+dllname = "kernel32_dll"
 
 # BOOL WINAPI SetConsoleTitle(
 #   _In_ LPCTSTR lpConsoleTitle
@@ -28,7 +28,9 @@ def hook_SetConsoleTitleW(ql, address, params):
 #   _In_  HANDLE                      hConsoleOutput,
 #   _Out_ PCONSOLE_SCREEN_BUFFER_INFO lpConsoleScreenBufferInfo
 # );
-@winsdkapi(cc=STDCALL, dllname=dllname, replace_params={"hConsoleOutput": HANDLE, "lpConsoleScreenBufferInfo": POINTER})
+@winsdkapi(
+    cc=STDCALL, dllname=dllname, replace_params={"hConsoleOutput": HANDLE, "lpConsoleScreenBufferInfo": POINTER}
+)
 def hook_GetConsoleScreenBufferInfo(ql, address, params):
     # Todo should we really?
     return 1

@@ -10,7 +10,7 @@ from qiling.os.windows.utils import *
 from qiling.os.windows.const import *
 
 
-dllname = 'shlwapi_dll'
+dllname = "shlwapi_dll"
 
 
 # LPCSTR PathFindExtensionA(

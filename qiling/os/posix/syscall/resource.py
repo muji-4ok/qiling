@@ -10,8 +10,10 @@ except ImportError:
     class DummyResource:
         def getrlimit(self, resource):
             return (-1, -1)
+
         def setrlimit(self, resource, rlim):
             pass
+
     resource = DummyResource()
 
 
@@ -23,14 +25,17 @@ from qiling.os.filestruct import *
 from qiling.os.posix.const_mapping import *
 from qiling.exception import *
 
+
 def ql_syscall_ugetrlimit(ql, ugetrlimit_resource, ugetrlimit_rlim, *args, **kw):
     rlim = resource.getrlimit(ugetrlimit_resource)
     ql.mem.write(ugetrlimit_rlim, ql.pack32s(rlim[0]) + ql.pack32s(rlim[1]))
     regreturn = 0
     return regreturn
 
+
 def ql_syscall_getrlimit(ql, getrlimit_resource, getrlimit_rlim, *args, **kw):
     return ql_syscall_ugetrlimit(ql, getrlimit_resource, getrlimit_rlim, *args, **kw)
+
 
 def ql_syscall_setrlimit(ql, setrlimit_resource, setrlimit_rlim, *args, **kw):
     # maybe we can nop the setrlimit

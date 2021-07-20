@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 
+#
 # Cross Platform and Multi Architecture Advanced Binary Emulation Framework
 #
 
@@ -15,6 +15,7 @@ from qiling.exception import *
 # tuple: range start, range end, permissions mask, range label
 MapInfoEntry = Tuple[int, int, int, str]
 
+
 class QlMemoryManager:
     """
     some ideas and code from:
@@ -25,18 +26,14 @@ class QlMemoryManager:
         self.ql = ql
         self.map_info: MutableSequence[MapInfoEntry] = []
 
-        bit_stuff = {
-            64 : (1 << 64) - 1,
-            32 : (1 << 32) - 1,
-            16 : (1 << 20) - 1   # 20bit address line
-        }
+        bit_stuff = {64: (1 << 64) - 1, 32: (1 << 32) - 1, 16: (1 << 20) - 1}  # 20bit address line
 
         if ql.archbit not in bit_stuff:
             raise QlErrorStructConversion("Unsupported Qiling archtecture for memory manager")
 
         max_addr = bit_stuff[ql.archbit]
 
-        #self.read_ptr = read_ptr
+        # self.read_ptr = read_ptr
         self.max_addr = max_addr
         self.max_mem_addr = max_addr
 
@@ -52,11 +49,11 @@ class QlMemoryManager:
         return ret.decode()
 
     def __write_string(self, addr: int, s: str, encoding: str):
-        self.write(addr, bytes(s, encoding) + b'\x00')
+        self.write(addr, bytes(s, encoding) + b"\x00")
 
     # TODO: this is an obsolete utility method that should not be used anymore
     # and here for backward compatibility. use QlOsUtils.read_cstring instead
-    def string(self, addr: int, value=None, encoding='utf-8') -> Optional[str]:
+    def string(self, addr: int, value=None, encoding="utf-8") -> Optional[str]:
         """Read or write string to memory.
 
         Args:
@@ -165,13 +162,9 @@ class QlMemoryManager:
         """
 
         def __perms_mapping(ps: int) -> str:
-            perms_d = {
-                UC_PROT_READ  : 'r',
-                UC_PROT_WRITE : 'w',
-                UC_PROT_EXEC  : 'x'
-            }
+            perms_d = {UC_PROT_READ: "r", UC_PROT_WRITE: "w", UC_PROT_EXEC: "x"}
 
-            return ''.join(val if idx & ps else '-' for idx, val in perms_d.items())
+            return "".join(val if idx & ps else "-" for idx, val in perms_d.items())
 
         def __process(lbound: int, ubound: int, perms: int, label: str) -> Tuple[int, int, str, str, Optional[str]]:
             perms_str = __perms_mapping(perms)
@@ -184,8 +177,7 @@ class QlMemoryManager:
         return tuple(__process(*entry) for entry in self.map_info)
 
     def show_mapinfo(self):
-        """Emit memory map info in a nicely formatted table.
-        """
+        """Emit memory map info in a nicely formatted table."""
 
         # emit title row
         self.ql.log.info(f'{"Start":8s}   {"End":8s}   {"Perm":5s}   {"Label":12s}   {"Image"}')
@@ -212,8 +204,7 @@ class QlMemoryManager:
         return (addr + (alignment - 1)) & mask
 
     def save(self) -> Mapping[int, Tuple[int, int, int, str, bytes]]:
-        """Save entire memory content.
-        """
+        """Save entire memory content."""
 
         mem_dict = {}
 
@@ -224,18 +215,17 @@ class QlMemoryManager:
         return mem_dict
 
     def restore(self, mem_dict: Mapping[int, Tuple[int, int, int, str, bytes]]):
-        """Restore saved memory content.
-        """
+        """Restore saved memory content."""
 
         for key, (lbound, ubound, perms, label, data) in mem_dict.items():
-            self.ql.log.debug(f'restore key: {key} {lbound:#08x} {ubound:#08x} {label}')
+            self.ql.log.debug(f"restore key: {key} {lbound:#08x} {ubound:#08x} {label}")
 
             size = ubound - lbound
             if not self.is_mapped(lbound, size):
-                self.ql.log.debug(f'mapping {lbound:#08x} {ubound:#08x}, mapsize = {size:#x}')
+                self.ql.log.debug(f"mapping {lbound:#08x} {ubound:#08x}, mapsize = {size:#x}")
                 self.map(lbound, size, perms, label)
 
-            self.ql.log.debug(f'writing {lbound:#08x}, size = {size:#x}, write_size = {len(data):#x}')
+            self.ql.log.debug(f"writing {lbound:#08x}, size = {size:#x}, write_size = {len(data):#x}")
             self.write(lbound, data)
 
     def read(self, addr: int, size: int) -> bytearray:
@@ -250,7 +240,7 @@ class QlMemoryManager:
 
         return self.ql.uc.mem_read(addr, size)
 
-    def read_ptr(self, addr: int, size: int=None) -> int:
+    def read_ptr(self, addr: int, size: int = None) -> int:
         """Read an integer value from a memory address.
 
         Args:
@@ -263,12 +253,7 @@ class QlMemoryManager:
         if not size:
             size = self.ql.pointersize
 
-        __unpack = {
-            1 : self.ql.unpack8,
-            2 : self.ql.unpack16,
-            4 : self.ql.unpack32,
-            8 : self.ql.unpack64
-        }.get(size)
+        __unpack = {1: self.ql.unpack8, 2: self.ql.unpack16, 4: self.ql.unpack32, 8: self.ql.unpack64}.get(size)
 
         if __unpack:
             return __unpack(self.read(addr, size))
@@ -287,8 +272,8 @@ class QlMemoryManager:
             self.ql.uc.mem_write(addr, data)
         except:
             self.show_mapinfo()
-            self.ql.log.debug(f'addresss write length: {len(data):d}')
-            self.ql.log.error(f'addresss write error: {addr:#x}')
+            self.ql.log.debug(f"addresss write length: {len(data):d}")
+            self.ql.log.error(f"addresss write error: {addr:#x}")
             raise
 
     def search(self, needle: bytes, begin: int = None, end: int = None) -> Sequence[int]:
@@ -302,7 +287,7 @@ class QlMemoryManager:
         Returns: addresses of all matches
         """
 
-        # if starting point not set, search from the first mapped region 
+        # if starting point not set, search from the first mapped region
         if begin is None:
             begin = self.map_info[0][0]
 
@@ -310,9 +295,13 @@ class QlMemoryManager:
         if end is None:
             end = self.map_info[-1][1]
 
-        assert begin < end, 'search arguments do not make sense'
+        assert begin < end, "search arguments do not make sense"
 
-        ranges = [(max(begin, lbound), min(ubound, end)) for lbound, ubound, _, _ in self.map_info if (begin <= lbound < end) or (begin < ubound <= end)]
+        ranges = [
+            (max(begin, lbound), min(ubound, end))
+            for lbound, ubound, _, _ in self.map_info
+            if (begin <= lbound < end) or (begin < ubound <= end)
+        ]
         results = []
 
         for lbound, ubound in ranges:
@@ -335,8 +324,7 @@ class QlMemoryManager:
         self.ql.uc.mem_unmap(addr, size)
 
     def unmap_all(self):
-        """Reclaim the entire memory space.
-        """
+        """Reclaim the entire memory space."""
 
         for begin, end, _ in self.ql.uc.mem_regions():
             if begin and end:
@@ -349,13 +337,16 @@ class QlMemoryManager:
         Returns: True if it can be allocated, False otherwise
         """
 
-        assert size > 0, 'expected a positive size value'
+        assert size > 0, "expected a positive size value"
 
         begin = addr
         end = addr + size
 
         # make sure neither begin nor end are enclosed within a mapped range, or entirely enclosing one
-        return not any((lbound <= begin < ubound) or (lbound < end <= ubound) or (begin <= lbound < ubound <= end) for lbound, ubound, _, _ in self.map_info)
+        return not any(
+            (lbound <= begin < ubound) or (lbound < end <= ubound) or (begin <= lbound < ubound <= end)
+            for lbound, ubound, _, _ in self.map_info
+        )
 
     def is_mapped(self, addr: int, size: int) -> bool:
         """Query whether the memory range starting at `addr` and is of length of `size` bytes
@@ -367,14 +358,14 @@ class QlMemoryManager:
         return not self.is_available(addr, size)
 
     def is_free(self, address, size):
-        '''
+        """
         The main function of is_free first must fufull is_mapped condition.
         then, check for is the mapped range empty, either fill with 0xFF or 0x00
         Returns true if mapped range is empty else return Flase
         If not not mapped, map it and return true
-        '''
+        """
         if self.is_mapped(address, size) == True:
-            address_end = (address + size)
+            address_end = address + size
             while address < address_end:
                 mem_read = self.ql.mem.read(address, 0x1)
                 if (mem_read[0] != 0x00) and (mem_read[0] != 0xFF):
@@ -383,7 +374,6 @@ class QlMemoryManager:
             return True
         else:
             return True
-
 
     def find_free_space(self, size: int, minaddr: int = None, maxaddr: int = None, align=0x1000) -> int:
         """Locate an unallocated memory that is large enough to contain a range in size of
@@ -425,9 +415,17 @@ class QlMemoryManager:
             if (lbound <= addr < end <= ubound) and (minaddr <= addr < end <= maxaddr):
                 return addr
 
-        raise QlOutOfMemory('Out Of Memory')
+        raise QlOutOfMemory("Out Of Memory")
 
-    def map_anywhere(self, size: int, minaddr: int = None, maxaddr: int = None, align=0x1000, perms: int = UC_PROT_ALL, info: str = None) -> int:
+    def map_anywhere(
+        self,
+        size: int,
+        minaddr: int = None,
+        maxaddr: int = None,
+        align=0x1000,
+        perms: int = UC_PROT_ALL,
+        info: str = None,
+    ) -> int:
         """Map a region anywhere in memory.
 
         Args:
@@ -452,7 +450,6 @@ class QlMemoryManager:
         aligned_size = self.align((addr & 0xFFF) + size)
         self.ql.uc.mem_protect(aligned_address, aligned_size, perms)
 
-
     def map(self, addr: int, size: int, perms: int = UC_PROT_ALL, info: str = None):
         """Map a new memory range.
 
@@ -467,16 +464,17 @@ class QlMemoryManager:
             QlMemoryMappedError: in case requested memory range is not fully available
         """
 
-        assert perms & ~UC_PROT_ALL == 0, f'unexpected permissions mask {perms}'
+        assert perms & ~UC_PROT_ALL == 0, f"unexpected permissions mask {perms}"
 
         if not self.is_available(addr, size):
-            raise QlMemoryMappedError('Requested memory is unavailable')
+            raise QlMemoryMappedError("Requested memory is unavailable")
 
         self.ql.uc.mem_map(addr, size, perms)
-        self.add_mapinfo(addr, addr + size, perms, info or '[mapped]')
+        self.add_mapinfo(addr, addr + size, perms, info or "[mapped]")
+
 
 # A Simple Heap Implementation
-class Chunk():
+class Chunk:
     def __init__(self, address: int, size: int):
         self.inuse = True
         self.address = address
@@ -485,6 +483,7 @@ class Chunk():
     @staticmethod
     def compare(chunk):
         return chunk.size
+
 
 class QlMemoryHeap:
     def __init__(self, ql: Qiling, start_address: int, end_address: int):
@@ -503,28 +502,28 @@ class QlMemoryHeap:
 
     def save(self) -> Mapping[str, Any]:
         saved_state = {
-            'chunks'        : self.chunks,
-            'start_address' : self.start_address,
-            'end_address'   : self.end_address,
-            'page_size'     : self.page_size,
-            'current_alloc' : self.current_alloc,
-            'current_use'   : self.current_use,
-            'mem_alloc'     : self.mem_alloc
+            "chunks": self.chunks,
+            "start_address": self.start_address,
+            "end_address": self.end_address,
+            "page_size": self.page_size,
+            "current_alloc": self.current_alloc,
+            "current_use": self.current_use,
+            "mem_alloc": self.mem_alloc,
         }
 
         return saved_state
 
     def restore(self, saved_state: Mapping[str, Any]):
-        self.chunks         = saved_state['chunks']
-        self.start_address  = saved_state['start_address']
-        self.end_address    = saved_state['end_address']
-        self.page_size      = saved_state['page_size']
-        self.current_alloc  = saved_state['current_alloc']
-        self.current_use    = saved_state['current_use']
-        self.mem_alloc      = saved_state['mem_alloc']
+        self.chunks = saved_state["chunks"]
+        self.start_address = saved_state["start_address"]
+        self.end_address = saved_state["end_address"]
+        self.page_size = saved_state["page_size"]
+        self.current_alloc = saved_state["current_alloc"]
+        self.current_use = saved_state["current_use"]
+        self.mem_alloc = saved_state["mem_alloc"]
 
     def alloc(self, size: int):
-        # Find the heap chunks that best matches size 
+        # Find the heap chunks that best matches size
         self.chunks.sort(key=Chunk.compare)
         for chunk in self.chunks:
             if chunk.inuse is False and chunk.size > size:
@@ -550,7 +549,7 @@ class QlMemoryHeap:
             self.chunks.append(chunk)
 
         chunk.inuse = True
-        #ql.log.debug("heap.alloc addresss: " + hex(chunk.address))
+        # ql.log.debug("heap.alloc addresss: " + hex(chunk.address))
         return chunk.address
 
     def size(self, addr: int) -> int:
@@ -613,4 +612,6 @@ class QlMemoryHeap:
         # nullify the in-use check in case the caller doesn't care about it
         dontcare = True if inuse is None else False
 
-        return next((chunk for chunk in self.chunks if addr == chunk.address and (dontcare or chunk.inuse == inuse)), None)
+        return next(
+            (chunk for chunk in self.chunks if addr == chunk.address and (dontcare or chunk.inuse == inuse)), None
+        )

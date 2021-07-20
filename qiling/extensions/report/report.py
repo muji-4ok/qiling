@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 
+#
 # Cross Platform and Multi Architecture Advanced Binary Emulation Framework
 #
 
@@ -42,13 +42,19 @@ class WindowsReport(Report):
         self.entry_point = ql.loader.entry_point
         self.import_symbols = {}
         for key, internal_dict in ql.loader.import_symbols.items():
-            internal_dict["name"] = internal_dict["name"].decode("utf-8") if type(internal_dict["name"]) == bytes else \
-                                    internal_dict["name"]
+            internal_dict["name"] = (
+                internal_dict["name"].decode("utf-8")
+                if type(internal_dict["name"]) == bytes
+                else internal_dict["name"]
+            )
             self.import_symbols[key] = internal_dict
         self.export_symbols = {}
         for key, internal_dict in ql.loader.export_symbols.items():
-            internal_dict["name"] = internal_dict["name"].decode("utf-8") if type(internal_dict["name"]) == bytes else \
-                                    internal_dict["name"]
+            internal_dict["name"] = (
+                internal_dict["name"].decode("utf-8")
+                if type(internal_dict["name"]) == bytes
+                else internal_dict["name"]
+            )
             self.export_symbols[key] = internal_dict
         self.cmdline = ql.loader.cmdline.decode("utf-8")
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 
+#
 # Cross Platform and Multi Architecture Advanced Binary Emulation Framework
 #
 
@@ -25,19 +25,24 @@ from qiling.os.macos.syscall import *
 from qiling.os.freebsd.syscall import *
 from qiling.os.qnx.syscall import *
 
-SYSCALL_PREF: str = f'ql_syscall_'
+SYSCALL_PREF: str = f"ql_syscall_"
+
 
 class intel32(intel.QlIntel32):
     _argregs = (UC_X86_REG_EBX, UC_X86_REG_ECX, UC_X86_REG_EDX, UC_X86_REG_ESI, UC_X86_REG_EDI, UC_X86_REG_EBP)
 
+
 class intel64(intel.QlIntel64):
     _argregs = (UC_X86_REG_RDI, UC_X86_REG_RSI, UC_X86_REG_RDX, UC_X86_REG_R10, UC_X86_REG_R8, UC_X86_REG_R9)
+
 
 class aarch32(arm.aarch32):
     _argregs = (UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_R2, UC_ARM_REG_R3, UC_ARM_REG_R4, UC_ARM_REG_R5)
 
+
 class aarch64(arm.aarch64):
     pass
+
 
 class mipso32(mips.mipso32):
     # TODO: should it be part of the standard mipso32 cc?
@@ -51,8 +56,8 @@ class mipso32(mips.mipso32):
         self.ql.reg.v0 = value
         self.ql.reg.a3 = a3return
 
-class QlOsPosix(QlOs):
 
+class QlOsPosix(QlOs):
     def __init__(self, ql: Qiling):
         super(QlOsPosix, self).__init__(ql)
 
@@ -63,25 +68,21 @@ class QlOsPosix(QlOs):
             self.uid = 0
             self.gid = 0
         else:
-            self.uid = self.profile.getint("KERNEL","uid")
-            self.gid = self.profile.getint("KERNEL","gid")
+            self.uid = self.profile.getint("KERNEL", "uid")
+            self.gid = self.profile.getint("KERNEL", "gid")
 
         self.pid = self.profile.getint("KERNEL", "pid")
         self.ipv6 = self.profile.getboolean("NETWORK", "ipv6")
         self.bindtolocalhost = self.profile.getboolean("NETWORK", "bindtolocalhost")
 
-        self.posix_syscall_hooks = {
-            QL_INTERCEPT.CALL : {},
-            QL_INTERCEPT.ENTER: {},
-            QL_INTERCEPT.EXIT : {}
-        }
+        self.posix_syscall_hooks = {QL_INTERCEPT.CALL: {}, QL_INTERCEPT.ENTER: {}, QL_INTERCEPT.EXIT: {}}
 
         self.__syscall_id_reg = {
             QL_ARCH.ARM64: UC_ARM64_REG_X8,
-            QL_ARCH.ARM  : UC_ARM_REG_R7,
-            QL_ARCH.MIPS : UC_MIPS_REG_V0,
-            QL_ARCH.X86  : UC_X86_REG_EAX,
-            QL_ARCH.X8664: UC_X86_REG_RAX
+            QL_ARCH.ARM: UC_ARM_REG_R7,
+            QL_ARCH.MIPS: UC_MIPS_REG_V0,
+            QL_ARCH.X86: UC_X86_REG_EAX,
+            QL_ARCH.X8664: UC_X86_REG_RAX,
         }[self.ql.archtype]
 
         # handle a special case
@@ -93,10 +94,10 @@ class QlOsPosix(QlOs):
         # TODO: use abstract to access __syscall_cc and __syscall_id_reg by defining a system call class
         self.__syscall_cc: QlCC = {
             QL_ARCH.ARM64: aarch64,
-            QL_ARCH.ARM  : aarch32,
-            QL_ARCH.MIPS : mipso32,
-            QL_ARCH.X86  : intel32,
-            QL_ARCH.X8664: intel64
+            QL_ARCH.ARM: aarch32,
+            QL_ARCH.MIPS: mipso32,
+            QL_ARCH.X86: intel32,
+            QL_ARCH.X8664: intel64,
         }[self.ql.archtype](ql)
 
         self._fd = QlFileDes([0] * NR_OPEN)
@@ -111,7 +112,7 @@ class QlOsPosix(QlOs):
 
     def set_syscall(self, target: Union[int, str], handler: Callable, intercept: QL_INTERCEPT):
         if type(target) is str:
-            target = f'{SYSCALL_PREF}{target}'
+            target = f"{SYSCALL_PREF}{target}"
 
         # BUG: workaround missing arg
         if intercept is None:
@@ -134,7 +135,7 @@ class QlOsPosix(QlOs):
         Returns: The string representation of the error.
         """
         if type(ret) is not int:
-            return '?'
+            return "?"
 
         return f'{ret:#x}{f" ({errors[-ret]})" if -ret in errors else f""}'
 
@@ -173,14 +174,14 @@ class QlOsPosix(QlOs):
             params = [self.__syscall_cc.getRawParam(i) for i in range(6)]
 
             try:
-        		# if set, fire up the on-enter hook and let it override original args set
+                # if set, fire up the on-enter hook and let it override original args set
                 if onenter_hook:
                     overrides = onenter_hook(self.ql, *params)
 
                     if overrides is not None:
                         _, params = overrides
 
-        		# perform syscall
+                # perform syscall
                 retval = syscall_hook(self.ql, *params)
 
                 # if set, fire up the on-exit hook and let it override the return value
@@ -199,11 +200,11 @@ class QlOsPosix(QlOs):
 
             except Exception as e:
                 self.ql.log.exception("")
-                self.ql.log.info(f'Syscall ERROR: {syscall_name} DEBUG: {e}')
+                self.ql.log.info(f"Syscall ERROR: {syscall_name} DEBUG: {e}")
                 raise e
 
             # print out log entry
-            syscall_basename = syscall_hook.__name__[len(SYSCALL_PREF):]
+            syscall_basename = syscall_hook.__name__[len(SYSCALL_PREF) :]
             args = []
 
             # ignore first arg, which is 'ql'
@@ -213,30 +214,34 @@ class QlOsPosix(QlOs):
                 name = str(name)
 
                 # ignore python special args
-                if name in ('*args', '**kw', '**kwargs'):
+                if name in ("*args", "**kw", "**kwargs"):
                     continue
 
                 # cut the first part of the arg if it is of form fstatat64_fd
-                if name.startswith(f'{syscall_basename}_'):
-                    name = name.partition('_')[-1]
+                if name.startswith(f"{syscall_basename}_"):
+                    name = name.partition("_")[-1]
 
-                args.append((name, f'{value:#x}'))
+                args.append((name, f"{value:#x}"))
 
             sret = retval and QlOsPosix.getNameFromErrorCode(retval)
             self.utils.print_function(self.ql.reg.arch_pc, syscall_basename, args, sret, False)
 
             # record syscall statistics
-            self.utils.syscalls.setdefault(syscall_name, []).append({
-                "params": dict(zip((f'param{i}' for i in range(6)), params)),
-                "result": retval,
-                "address": self.ql.reg.arch_pc,
-                "return_address": None,
-                "position": self.utils.syscalls_counter
-            })
+            self.utils.syscalls.setdefault(syscall_name, []).append(
+                {
+                    "params": dict(zip((f"param{i}" for i in range(6)), params)),
+                    "result": retval,
+                    "address": self.ql.reg.arch_pc,
+                    "return_address": None,
+                    "position": self.utils.syscalls_counter,
+                }
+            )
 
             self.utils.syscalls_counter += 1
         else:
-            self.ql.log.warning(f'{self.ql.reg.arch_pc:#x}: syscall {syscall_name} number = {syscall:#x}({syscall:d}) not implemented')
+            self.ql.log.warning(
+                f"{self.ql.reg.arch_pc:#x}: syscall {syscall_name} number = {syscall:#x}({syscall:d}) not implemented"
+            )
 
             if self.ql.debug_stop:
                 raise QlErrorSyscallNotFound("Syscall Not Found")
